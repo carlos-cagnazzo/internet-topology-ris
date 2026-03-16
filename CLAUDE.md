@@ -27,13 +27,13 @@ uv run --with typer get-mrt.py
 
 ## bgpreader Usage
 
-To read a single local MRT file and extract elements:
+To read a single local RIB (bview) file:
 
 ```bash
-bgpreader -d singlefile -o mrt-file=<path> -e
+bgpreader -d singlefile -o rib-file=<path>
 ```
 
-Key flags: `-d singlefile` selects the file interface; `-o mrt-file=<path>` sets the file; `-e` outputs per-element records (default). The output columns include record type, element type, timestamps, collector, peer info, prefix, and AS path.
+Output is `|`-delimited. Column indices (0-based): 0=record type, 1=element type (`R`=RIB entry, `B`=block start marker), 2=timestamp, 7=peer ASN, 8=peer IP, 9=prefix, 10=next-hop, **11=AS path**, 12=origin AS, 13=communities. Only process lines where field[1] == `R`; skip `B` lines. Note: the option name is `rib-file`, not `mrt-file`.
 
 ## Pipeline Architecture
 
