@@ -1,0 +1,40 @@
+❯ bgpreader -h
+Usage: bgpreader [<options>]
+Available options are:
+ -d, --data-interface  <interface>      use the given data interface to find available data. Available values are:
+                       broker           Retrieve metadata information from the BGPStream Broker service (default)
+                       singlefile       Read a single mrt data file (RIB and/or updates)
+                       kafka            Read updates in real-time from an Apache Kafka topic
+                       csvfile          Retrieve metadata information from a csv file
+ -f, --filter          <filterstring>   filter records and elements using the rules described in the given filter string
+ -I, --interval        <num> <unit>     process records that were received the last <num> <unit>s of time, where <unit> is one of 's',
+                                        'm', 'h', 'd' (seconds, minutes, hours, days).
+ -o, --data-interface-option  
+                       <option-name>=<option-value>*  
+                                        set an option for the current data interface. Use '-o?' to get a list of available options for the
+                                        current data interface (as selected with -d). Each option can only be set once.
+ -p, --project         <project>        process records from only the given project (routeviews, ris)*
+ -c, --collector       <collector>      process records from only the given collector*
+ -R, --router          <router>         process records from only the given router*
+ -t, --record-type     <type>           process records with only the given type (ribs, updates)*
+ -T, --resource-type   <resource-type>  process records from only the given resource type (stream, batch)*
+ -w, --time-window     <start>[,<end>]  process records within the given time window.  <start> and <end> may be in 'Y-m-d [H:M[:S]]'
+                                        format (in UTC) or in unix epoch time.  Omitting <end> enables live mode.
+ -P, --rib-period      <period>         process a rib files every <period> seconds (bgp time)
+ -j, --peer-asn        <peer ASN>       return elems received by a given peer ASN*
+ -J, --not-peer-asn    <not peer ASN>   exclude elems received by a given peer ASN*
+ -a, --origin-asn      <origin ASN>     return elems originated by a given origin ASN*
+ -k, --prefix          <prefix>         return elems associated with a given prefix*
+ -y, --community       <community>      return elems with the specified community* (format: asn:value. the '*' metacharacter is
+                                        recognized)
+ -A, --aspath          <regex>          return elems that match the aspath regex*
+ -n, --count           <rec-cnt>        process at most <rec-cnt> records
+ -l, --live                             enable live mode (make blocking requests for BGP records); allows bgpstream to be used to process
+                                        data in real-time
+ -e, --output-elems                     print info for each element of a BGP record (default)
+ -m, --output-bgpdump                   print info for each BGP record in bgpdump -m format
+ -r, --output-records                   print info for each BGP record (used mostly for debugging BGPStream)
+ -i, --output-headers                   print format information before output
+ -v, --version                          print the version of bgpreader
+ -h, --help                             print this help menu
+* denotes an option that can be given multiple times
