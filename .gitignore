@@ -11,3 +11,5 @@ wheels/
 .python-version
 *mrt/*
 *paths/*
+topology*.txt
+nro-delegated-stats
