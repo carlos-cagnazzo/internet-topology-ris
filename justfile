@@ -22,7 +22,7 @@ collectors := "rrc00"
 date       := ""
 mrt_dir    := "./mrt"
 paths_dir  := "./paths"
-output     := "./topology.txt"
+output     := "output/topology.txt"
 
 # List available recipes
 default:
@@ -47,5 +47,7 @@ process:
 # Step 3 — Build deduplicated AS-level topology edge list
 topology:
     uv run build-topology.py \
+        --justify-output \
+        --filter-registered \
         --input "{{ paths_dir }}/*.txt" \
         --output {{ output }}

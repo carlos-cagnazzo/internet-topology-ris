@@ -51,12 +51,13 @@ Three scripts forming a linear pipeline, orchestrated via `justfile`:
 
 2. **`process-mrt.py`** — Calls `bgpreader` on each `.gz` file to extract AS paths, writing `.txt` sidecar files to `--output-dir` (default `./paths`). Each output line contains only the AS path string (space-separated ASNs). Skips files whose `.txt` already exists.
 
-3. **`build-topology.py`** — Reads `.txt` path files (via `--input` glob), extracts edges, and writes output files to the directory of `--output` (default `./topology.txt`). Always produces two files:
-   - `{stem}.txt` — deduplicated undirected edge list, one `AS1 AS2` per line
+3. **`build-topology.py`** — Reads `.txt` path files (via `--input` glob), extracts edges, and writes output files to the directory of `--output` (default `./topology.txt`). Always produces three files:
+   - `{stem}.txt` — deduplicated undirected edge list, one `AS1 AS2` per line, sorted numerically
    - `{stem}-asns.txt` — sorted list of all unique ASNs present in the topology
+   - `{stem}-paths.txt` — deduplicated list of unique AS paths seen across all input files, sorted by leading ASN numerically; paths are directional (BGP semantics preserved)
 
    Optional flags:
-   - `--filter-registered` — drops edges where either ASN is not `assigned` per the NRO delegated stats file. Writes a `{stem}-dropped-asns.txt` sidecar. The NRO stats file is cached next to the input `.txt` files and re-downloaded only if older than 24 hours.
+   - `--filter-registered` — filters at the **path level**: a path is excluded if *any* of its ASNs is not `assigned` per the NRO delegated stats. Excluded ASNs are collected in `{stem}-dropped-asns.txt`; excluded edges are counted in the summary. The NRO stats file is cached next to the input `.txt` files and re-downloaded only if older than 24 hours.
    - `--justify-output` — zero-pads all ASNs to 8 digits in all output files (e.g. `6057` → `00006057`). Does not affect terminal output.
 
 ## Conventions

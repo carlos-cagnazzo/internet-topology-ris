@@ -18,10 +18,16 @@ of the five RIRs, using the NRO delegated extended stats file as the source of
 truth. The stats file is cached next to the input files and re-downloaded only
 if it is more than 24 hours old.
 
-Always writes a sidecar ASN list file ({stem}-asns{suffix}) containing all
-unique ASNs present in the final topology, one per line.
+Always writes two sidecar files:
+  {stem}-asns.txt  — unique ASNs present in the final topology
+  {stem}-paths.txt — unique AS paths seen across all input files
+
+The paths file is built via an external sort to avoid loading millions of paths
+into memory simultaneously.
 """
 
+import subprocess
+import tempfile
 import time
 from glob import glob
 from pathlib import Path
@@ -127,6 +133,36 @@ def load_registered_asns(stats_path: Path) -> set[str]:
     return registered
 
 
+def sort_and_dedup_paths(tmp_path: Path, out_path: Path, justify: bool) -> int:
+    """Sort and deduplicate a raw paths temp file, writing formatted output.
+
+    Uses the system `sort` command to sort and deduplicate on disk, avoiding
+    loading all paths into memory. Paths are sorted numerically by leading ASN.
+
+    Args:
+        tmp_path:  Path to the unsorted, non-deduplicated raw paths temp file.
+        out_path:  Path to write the final sorted, unique, formatted paths.
+        justify:   Whether to apply zero-padding via fmt().
+
+    Returns:
+        Number of unique paths written.
+    """
+    count = 0
+    sort_proc = subprocess.Popen(
+        ["sort", "-u", "-k1,1n", str(tmp_path)],
+        stdout=subprocess.PIPE,
+        text=True,
+    )
+    with out_path.open("w") as fh:
+        for line in sort_proc.stdout:
+            tokens = line.split()
+            if tokens:
+                fh.write(" ".join(fmt(t, justify) for t in tokens) + "\n")
+                count += 1
+    sort_proc.wait()
+    return count
+
+
 @app.command()
 def main(
     input_files: str = typer.Option(
@@ -145,7 +181,7 @@ def main(
         False,
         "--filter-registered/--no-filter-registered",
         help=(
-            "When enabled, drops any edge where either ASN is not formally assigned "
+            "When enabled, drops any path where any ASN is not formally assigned "
             "according to the NRO delegated extended stats. Unregistered ASNs are "
             "written to a sidecar file next to --output."
         ),
@@ -197,57 +233,75 @@ def main(
         console=console,
     )
 
-    with progress:
-        overall = progress.add_task("Files", total=total_files)
-        for txt_path in matches:
-            progress.update(overall, description=f"[cyan]{Path(txt_path).name}[/cyan]")
-            with open(txt_path) as fh:
-                for line in fh:
-                    tokens = line.split()
-                    if len(tokens) < 2:
-                        continue
-                    total_paths += 1
-                    for a, b in zip(tokens, tokens[1:]):
-                        edge = (a, b) if int(a) < int(b) else (b, a)
+    # Stream accepted paths to a temp file; sort+dedup on disk after the loop
+    tmp_file = tempfile.NamedTemporaryFile(
+        mode="w", suffix=".txt", prefix="paths-tmp-", delete=False
+    )
+    tmp_path = Path(tmp_file.name)
+
+    try:
+        with progress:
+            overall = progress.add_task("Files", total=total_files)
+            for txt_path in matches:
+                progress.update(overall, description=f"[cyan]{Path(txt_path).name}[/cyan]")
+                with open(txt_path) as fh:
+                    for line in fh:
+                        tokens = line.split()
+                        if len(tokens) < 2:
+                            continue
+                        total_paths += 1
+                        # Post-filter: skip path entirely if any ASN is unregistered
                         if registered_asns is not None:
-                            a_ok = a in registered_asns
-                            b_ok = b in registered_asns
-                            if not a_ok or not b_ok:
-                                dropped_edges.add(edge)
-                                if not a_ok:
-                                    dropped_asns.add(a)
-                                if not b_ok:
-                                    dropped_asns.add(b)
+                            if not all(t in registered_asns for t in tokens):
+                                for t in tokens:
+                                    if t not in registered_asns:
+                                        dropped_asns.add(t)
+                                for a, b in zip(tokens, tokens[1:]):
+                                    dropped_edges.add((a, b) if int(a) < int(b) else (b, a))
                                 continue
-                        edges.add(edge)
-                        asns.add(a)
-                        asns.add(b)
-            progress.advance(overall)
+                        tmp_file.write(" ".join(tokens) + "\n")
+                        for a, b in zip(tokens, tokens[1:]):
+                            edge = (a, b) if int(a) < int(b) else (b, a)
+                            edges.add(edge)
+                            asns.add(a)
+                            asns.add(b)
+                progress.advance(overall)
 
-    output.parent.mkdir(parents=True, exist_ok=True)
+        tmp_file.close()
 
-    # Write topology edge list
-    console.print(f"  Writing [bold]{len(edges):,}[/bold] edges to [green]{output}[/green] ...")
-    with output.open("w") as fh:
-        for a, b in sorted(edges, key=lambda e: (int(e[0]), int(e[1]))):
-            fh.write(f"{fmt(a, justify_output)} {fmt(b, justify_output)}\n")
+        output.parent.mkdir(parents=True, exist_ok=True)
 
-    # Write ASN list (always generated)
-    asns_path = output.parent / f"{output.stem}-asns{output.suffix}"
-    console.print(f"  Writing [bold]{len(asns):,}[/bold] ASNs to [green]{asns_path}[/green] ...")
-    with asns_path.open("w") as fh:
-        for asn in sorted(asns, key=int):
-            fh.write(f"{fmt(asn, justify_output)}\n")
+        # Write topology edge list
+        console.print(f"  Writing [bold]{len(edges):,}[/bold] edges to [green]{output}[/green] ...")
+        with output.open("w") as fh:
+            for a, b in sorted(edges, key=lambda e: (int(e[0]), int(e[1]))):
+                fh.write(f"{fmt(a, justify_output)} {fmt(b, justify_output)}\n")
 
-    # Write dropped ASNs sidecar file
-    if filter_registered and dropped_asns:
-        dropped_path = output.parent / f"{output.stem}-dropped-asns{output.suffix}"
-        console.print(
-            f"  Writing [bold]{len(dropped_asns):,}[/bold] dropped ASNs to [yellow]{dropped_path}[/yellow] ..."
-        )
-        with dropped_path.open("w") as fh:
-            for asn in sorted(dropped_asns, key=int):
+        # Write ASN list (always generated)
+        asns_path = output.parent / f"{output.stem}-asns{output.suffix}"
+        console.print(f"  Writing [bold]{len(asns):,}[/bold] ASNs to [green]{asns_path}[/green] ...")
+        with asns_path.open("w") as fh:
+            for asn in sorted(asns, key=int):
                 fh.write(f"{fmt(asn, justify_output)}\n")
+
+        # Sort and deduplicate paths on disk, then write formatted output
+        paths_path = output.parent / f"{output.stem}-paths{output.suffix}"
+        console.print(f"  Sorting and deduplicating paths → [green]{paths_path}[/green] ...")
+        unique_path_count = sort_and_dedup_paths(tmp_path, paths_path, justify_output)
+        console.print(f"  [bold]{unique_path_count:,}[/bold] unique paths written.")
+
+        # Write dropped ASNs sidecar file
+        if filter_registered and dropped_asns:
+            dropped_path = output.parent / f"{output.stem}-dropped-asns{output.suffix}"
+            console.print(
+                f"  Writing [bold]{len(dropped_asns):,}[/bold] dropped ASNs to [yellow]{dropped_path}[/yellow] ..."
+            )
+            with dropped_path.open("w") as fh:
+                for asn in sorted(dropped_asns, key=int):
+                    fh.write(f"{fmt(asn, justify_output)}\n")
+
+    finally:
+        tmp_path.unlink(missing_ok=True)
 
     elapsed = time.monotonic() - start
     summary = (
@@ -256,6 +310,7 @@ def main(
         f"  AS paths read   : {total_paths:,}\n"
         f"  Unique edges    : {len(edges):,}\n"
         f"  Unique ASNs     : {len(asns):,}\n"
+        f"  Unique paths    : {unique_path_count:,}\n"
     )
     if filter_registered:
         summary += (
