@@ -9,21 +9,29 @@ Reconstruct Internet AS-level topology from RIPE RIS MRT files. The pipeline dow
 ## Commands
 
 ```bash
-# Run a script
+# Run the full pipeline via just
+just date=20240101 pipeline
+just date=20240101 collectors=rrc00,rrc01,rrc04 pipeline
+
+# Run individual steps
+just date=20240101 collectors=rrc00 download
+just process
+just topology
+
+# Run a script directly
 uv run get-mrt.py --collectors rrc00,rrc01 --date 20240101
 
 # Add a dependency
-uv add typer
-
-# Run with inline dependency (before pyproject.toml is updated)
-uv run --with typer get-mrt.py
+uv add <package>
 ```
 
 ## Tech Stack
 
 - **Python 3.12+** via `uv`
-- **typer** for CLI and colorful output
+- **typer** + **rich** for CLI and colorful output
+- **httpx** for streaming HTTP downloads
 - **bgpreader** (system binary) for parsing MRT files
+- **just** for pipeline orchestration
 
 ## bgpreader Usage
 
@@ -37,25 +45,38 @@ Output is `|`-delimited. Column indices (0-based): 0=record type, 1=element type
 
 ## Pipeline Architecture
 
-Three scripts forming a linear pipeline:
+Three scripts forming a linear pipeline, orchestrated via `justfile`:
 
-1. **`get-mrt.py`** — Downloads `.gz` MRT files from `https://data.ris.ripe.net/rrcXX/YYYY.MM/TYPE.YYYYMMDD.HHmm.gz`. Flags: `--collectors` (comma-separated rrcXX list), `--date` (YYYYMMDD), `--output-dir` (default `./mrt`). Skips already-downloaded files. Only downloads **RIB snapshots** (`bview` type), specifically the **00:00 UTC** snapshot for the given date.
+1. **`get-mrt.py`** — Downloads the 00:00 UTC RIB snapshot (`bview`) for a given date from one or more RIS collectors. Flags: `--collectors` (required, comma-separated), `--date` (required, YYYYMMDD), `--output-dir` (default `./mrt`). Skips already-downloaded files. Output filenames include the collector name: `bview.rrcXX.YYYYMMDD.0000.gz`.
 
-2. **`process-mrt.py`** — Calls `bgpreader` on each `.gz` file to extract AS paths, writing `.txt` sidecar files in `--output-dir` (default `./paths`). Each line of the output file contains **only the AS path string** (space-separated ASNs). Skips files whose `.txt` already exists.
+2. **`process-mrt.py`** — Calls `bgpreader` on each `.gz` file to extract AS paths, writing `.txt` sidecar files to `--output-dir` (default `./paths`). Each output line contains only the AS path string (space-separated ASNs). Skips files whose `.txt` already exists.
 
-3. **`build-topology.py`** *(planned)* — Reads `.txt` path files (via `--input` glob), extracts edges from AS paths, and emits a deduplicated undirected `AS1 AS2` edge list. Links are undirected: `AS1 AS2` and `AS2 AS1` are the same edge.
+3. **`build-topology.py`** — Reads `.txt` path files (via `--input` glob), extracts edges, and writes output files to the directory of `--output` (default `./topology.txt`). Always produces two files:
+   - `{stem}.txt` — deduplicated undirected edge list, one `AS1 AS2` per line
+   - `{stem}-asns.txt` — sorted list of all unique ASNs present in the topology
+
+   Optional flags:
+   - `--filter-registered` — drops edges where either ASN is not `assigned` per the NRO delegated stats file. Writes a `{stem}-dropped-asns.txt` sidecar. The NRO stats file is cached next to the input `.txt` files and re-downloaded only if older than 24 hours.
+   - `--justify-output` — zero-pads all ASNs to 8 digits in all output files (e.g. `6057` → `00006057`). Does not affect terminal output.
 
 ## Conventions
 
 - All scripts: measure and display total execution time on exit; show progress when processing multiple files; include inline docstrings and rich `--help` output.
-- `--collectors` is a mandatory argument with no default.
-- AS path processing rules:
-  - Collapse consecutive duplicate ASNs before extracting edges (remove prepending): `A A B C` → treat as `A B C`.
-  - AS sets (e.g., `{64500,64501}`) are skipped as segment endpoints: truncate the path at the AS set, keeping edges from segments before it. E.g., `A B {C,D} E` → only edge `(A,B)`.
-  - Store edges as sorted tuples to deduplicate regardless of direction: `(min(A,B), max(A,B))`.
+- `--collectors` is mandatory with no default.
+- AS path processing rules (applied in `process-mrt.py`):
+  - Collapse consecutive duplicate ASNs before extracting edges (remove prepending): `A A B C` → `A B C`.
+  - AS sets (e.g. `{64500,64501}`) truncate the path at that point; edges before the set are kept.
+  - Edges are stored as integer-ordered tuples: `(a, b) if int(a) < int(b) else (b, a)`. **Do not use string `min`/`max`** — lexicographic order differs from numeric order for ASNs (e.g. `"22773" < "6"` as strings).
 - `bview` files are the RIB snapshot type used by RIS.
+- Output data files (`topology*.txt`, `nro-delegated-stats`) are excluded from version control via `.gitignore`.
+
+## NRO Delegated Stats
+
+- URL: `https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats`
+- Format: `|`-delimited. ASN records have field[2]`==`asn`. Valid statuses: `assigned` (keep), `available`/`reserved` (discard). Skip lines where field[1]`==`*` (summary) or field[4]`==`summary`.
+- field[3] = start ASN, field[4] = count (expand range with `range(start, start+count)`).
 
 ## RIS Data
 
 - Collectors: `rrc00` through `rrc25`
-- URL pattern: `https://data.ris.ripe.net/rrcXX/YYYY.MM/TYPE.YYYYMMDD.HHmm.gz`
+- URL pattern: `https://data.ris.ripe.net/rrcXX/YYYY.MM/bview.YYYYMMDD.0000.gz`

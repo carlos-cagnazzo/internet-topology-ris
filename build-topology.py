@@ -17,6 +17,9 @@ Optionally filters edges to include only ASNs that are formally assigned by one
 of the five RIRs, using the NRO delegated extended stats file as the source of
 truth. The stats file is cached next to the input files and re-downloaded only
 if it is more than 24 hours old.
+
+Always writes a sidecar ASN list file ({stem}-asns{suffix}) containing all
+unique ASNs present in the final topology, one per line.
 """
 
 import time
@@ -34,6 +37,20 @@ console = Console()
 NRO_STATS_URL = "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats"
 NRO_CACHE_FILENAME = "nro-delegated-stats"
 NRO_MAX_AGE_SECONDS = 24 * 3600
+ASN_FIELD_WIDTH = 8
+
+
+def fmt(asn: str, justify: bool) -> str:
+    """Format an ASN string for file output.
+
+    Args:
+        asn:     ASN as a plain string (e.g. '6057').
+        justify: When True, zero-pad to ASN_FIELD_WIDTH digits (e.g. '00006057').
+
+    Returns:
+        Formatted ASN string.
+    """
+    return asn.zfill(ASN_FIELD_WIDTH) if justify else asn
 
 
 def fetch_nro_stats(cache_path: Path) -> Path:
@@ -133,6 +150,15 @@ def main(
             "written to a sidecar file next to --output."
         ),
     ),
+    justify_output: bool = typer.Option(
+        False,
+        "--justify-output/--no-justify-output",
+        help=(
+            f"When enabled, all ASN numbers in every output file are zero-padded to "
+            f"{ASN_FIELD_WIDTH} digits (e.g. AS 6057 → {str(6057).zfill(ASN_FIELD_WIDTH)}). "
+            "Does not affect terminal output."
+        ),
+    ),
 ) -> None:
     """Build a deduplicated undirected AS-level topology edge list from AS path files."""
     start = time.monotonic()
@@ -198,12 +224,20 @@ def main(
                         asns.add(b)
             progress.advance(overall)
 
-    # Write topology
-    console.print(f"  Writing [bold]{len(edges):,}[/bold] edges to [green]{output}[/green] ...")
     output.parent.mkdir(parents=True, exist_ok=True)
+
+    # Write topology edge list
+    console.print(f"  Writing [bold]{len(edges):,}[/bold] edges to [green]{output}[/green] ...")
     with output.open("w") as fh:
         for a, b in sorted(edges, key=lambda e: (int(e[0]), int(e[1]))):
-            fh.write(f"{a} {b}\n")
+            fh.write(f"{fmt(a, justify_output)} {fmt(b, justify_output)}\n")
+
+    # Write ASN list (always generated)
+    asns_path = output.parent / f"{output.stem}-asns{output.suffix}"
+    console.print(f"  Writing [bold]{len(asns):,}[/bold] ASNs to [green]{asns_path}[/green] ...")
+    with asns_path.open("w") as fh:
+        for asn in sorted(asns, key=int):
+            fh.write(f"{fmt(asn, justify_output)}\n")
 
     # Write dropped ASNs sidecar file
     if filter_registered and dropped_asns:
@@ -213,7 +247,7 @@ def main(
         )
         with dropped_path.open("w") as fh:
             for asn in sorted(dropped_asns, key=int):
-                fh.write(f"{asn}\n")
+                fh.write(f"{fmt(asn, justify_output)}\n")
 
     elapsed = time.monotonic() - start
     summary = (
