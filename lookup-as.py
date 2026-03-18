@@ -8,12 +8,19 @@ to retrieve:
   - Date/time the AS was last seen in the global routing table
   - Whether the AS is currently announcing routes
 
+Input sources (mutually exclusive):
+  --asn   single ASN on the command line
+  --file  file with one ASN per line; use '-' to read from stdin
+  stdin   if neither --asn nor --file is given and stdin is not a tty,
+          ASNs are read from stdin automatically
+
 Results are displayed as a rich table. Optionally written to a TSV file.
-Batch lookups (--file) run concurrently for speed.
+Batch lookups run concurrently for speed and show a live progress bar.
 """
 
 import asyncio
 import csv
+import sys
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -22,6 +29,7 @@ from pathlib import Path
 import httpx
 import typer
 from rich.console import Console
+from rich.progress import BarColumn, MofNCompleteColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from rich.table import Table
 
 app = typer.Typer(help=__doc__)
@@ -122,12 +130,21 @@ async def fetch_as_info(asn: str, client: httpx.AsyncClient) -> ASInfo:
     )
 
 
-async def fetch_all(asns: list[str], concurrency: int) -> list[ASInfo]:
+async def fetch_all(
+    asns: list[str],
+    concurrency: int,
+    on_complete: asyncio.Queue | None = None,
+) -> list[ASInfo]:
     """Fetch info for all ASNs concurrently, bounded by a semaphore.
+
+    Results are returned in the same order as *asns*. After each ASN
+    finishes, a sentinel is put onto *on_complete* (if provided) so that
+    the caller can drive a progress bar.
 
     Args:
         asns:        List of ASN strings to look up.
         concurrency: Maximum number of in-flight requests at once.
+        on_complete: Optional asyncio.Queue; one item is put per finished ASN.
 
     Returns:
         List of ASInfo results in the same order as the input.
@@ -136,7 +153,10 @@ async def fetch_all(asns: list[str], concurrency: int) -> list[ASInfo]:
 
     async def bounded(asn: str, client: httpx.AsyncClient) -> ASInfo:
         async with sem:
-            return await fetch_as_info(asn, client)
+            result = await fetch_as_info(asn, client)
+        if on_complete is not None:
+            await on_complete.put(result)
+        return result
 
     async with httpx.AsyncClient(follow_redirects=True) as client:
         return await asyncio.gather(*(bounded(asn, client) for asn in asns))
@@ -225,12 +245,14 @@ def main(
         help="Single ASN to look up (e.g. 15169). Mutually exclusive with --file.",
         metavar="ASN",
     ),
-    file: Path | None = typer.Option(
+    file: str | None = typer.Option(
         None,
         "--file",
-        help="File containing one ASN per line. Mutually exclusive with --asn.",
+        help=(
+            "File containing one ASN per line. Use '-' to read from stdin. "
+            "Mutually exclusive with --asn."
+        ),
         metavar="FILE",
-        exists=False,
     ),
     output: Path | None = typer.Option(
         None,
@@ -251,9 +273,6 @@ def main(
     start = time.monotonic()
 
     # Validate mutual exclusion
-    if asn is None and file is None:
-        console.print("[red]Error:[/red] Provide either --asn or --file.")
-        raise typer.Exit(1)
     if asn is not None and file is not None:
         console.print("[red]Error:[/red] --asn and --file are mutually exclusive.")
         raise typer.Exit(1)
@@ -261,15 +280,27 @@ def main(
     # Build ASN list
     if asn is not None:
         asns = [asn.strip().lstrip("ASas")]
-    else:
-        if not file.exists():
-            console.print(f"[red]Error:[/red] File not found: {file}")
-            raise typer.Exit(1)
-        raw_lines = file.read_text().splitlines()
+        batch = False
+    elif file is not None or not sys.stdin.isatty():
+        # --file PATH, --file -, or implicit stdin (pipe/redirect)
+        if file is None or file == "-":
+            raw_lines = sys.stdin.read().splitlines()
+            source = "stdin"
+        else:
+            p = Path(file)
+            if not p.exists():
+                console.print(f"[red]Error:[/red] File not found: {file}")
+                raise typer.Exit(1)
+            raw_lines = p.read_text().splitlines()
+            source = str(file)
         asns = [line.strip().lstrip("ASas") for line in raw_lines if line.strip()]
         if not asns:
-            console.print(f"[red]Error:[/red] No ASNs found in {file}")
+            console.print(f"[red]Error:[/red] No ASNs found in {source}")
             raise typer.Exit(1)
+        batch = True
+    else:
+        console.print("[red]Error:[/red] Provide --asn, --file, or pipe ASNs via stdin.")
+        raise typer.Exit(1)
 
     # Validate all tokens are numeric
     invalid = [a for a in asns if not a.isdigit()]
@@ -288,7 +319,33 @@ def main(
     total = len(unique_asns)
     console.print(f"\n[bold]Looking up {total} ASN(s) via RIPEstat[/bold]\n")
 
-    results = asyncio.run(fetch_all(unique_asns, concurrency))
+    if batch and total > 1:
+        # Run with a live progress bar; completions arrive via a queue
+        progress = Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            MofNCompleteColumn(),
+            TimeElapsedColumn(),
+            console=console,
+        )
+
+        async def run_with_progress() -> list[ASInfo]:
+            queue: asyncio.Queue = asyncio.Queue()
+            task_id = progress.add_task("Looking up ASNs", total=total)
+            fetch_task = asyncio.create_task(fetch_all(unique_asns, concurrency, queue))
+            completed = 0
+            with progress:
+                while completed < total:
+                    await queue.get()
+                    completed += 1
+                    progress.update(task_id, completed=completed)
+            return await fetch_task
+
+        results = asyncio.run(run_with_progress())
+    else:
+        results = asyncio.run(fetch_all(unique_asns, concurrency))
+
     results.sort(key=lambda r: int(r.asn))
 
     console.print(build_table(results))
