@@ -90,6 +90,15 @@ Three scripts forming a linear pipeline, orchestrated via `justfile`:
 - Format: `|`-delimited. ASN records have field[2]`==`asn`. Valid statuses: `assigned` (keep), `available`/`reserved` (discard). Skip lines where field[1]`==`*` (summary) or field[4]`==`summary`.
 - field[3] = start ASN, field[4] = count (expand range with `range(start, start+count)`).
 
+## Helper Tools
+
+**`lookup-as.py`** — Queries the RIPEstat Data API for one or more ASNs. Returns AS holder name, announced prefix count, last-seen timestamp, and announced status. Three input modes: `--asn <N>` (single), `--file <path>` (batch), `--file -` or implicit stdin (pipe). Batch requests run concurrently via `asyncio` + `httpx.AsyncClient`, bounded by `--concurrency` (default 10). A live progress bar is shown for batch mode. `--output` writes a TSV sidecar alongside the terminal table.
+
+API endpoints used (all under `https://stat.ripe.net/data/`):
+- `as-overview` → holder name, `announced` bool
+- `announced-prefixes` → `prefixes` list (len = prefix count)
+- `routing-status` → `last_seen.time` (ISO string)
+
 ## RIS Data
 
 - Collectors: `rrc00` through `rrc25`

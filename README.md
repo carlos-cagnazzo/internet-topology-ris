@@ -230,6 +230,49 @@ uv run build-topology.py \
 
 ---
 
+## Helper Tools
+
+### AS Lookup: `lookup-as.py`
+
+Queries the [RIPEstat Data API](https://stat.ripe.net/docs/data_api) to retrieve, for one or more ASNs:
+- AS holder name
+- Number of currently announced prefixes
+- Date/time last seen in the global routing table
+- Whether the AS is currently announcing routes
+
+```
+uv run lookup-as.py --asn <ASN>
+uv run lookup-as.py --file <file>
+uv run lookup-as.py --file -
+cat asns.txt | uv run lookup-as.py
+```
+
+| Flag | Description |
+|---|---|
+| `--asn` | Single ASN to look up. Mutually exclusive with `--file`. |
+| `--file` | File with one ASN per line. Use `-` to read from stdin. Mutually exclusive with `--asn`. |
+| `--output` | Write results as TSV to this file in addition to terminal output. Optional. |
+| `--concurrency` | Max parallel API requests in batch mode. Default: `10`. |
+
+Input accepts bare ASNs (`15169`) or `AS`-prefixed strings (`AS15169`). Batch lookups run concurrently and show a live progress bar. Results are displayed as a rich table sorted numerically by ASN. If neither `--asn` nor `--file` is given and stdin is not a tty, ASNs are read from stdin automatically.
+
+**Examples:**
+```bash
+# Single ASN
+uv run lookup-as.py --asn 15169
+
+# Batch from file
+uv run lookup-as.py --file asns.txt
+
+# Pipe from another command, write TSV
+cat output/topology-asns.txt | uv run lookup-as.py --output asn-info.tsv
+
+# Look up ASNs from the dropped list
+uv run lookup-as.py --file output/topology-dropped-asns.txt
+```
+
+---
+
 ## Scale Reference
 
 Processing rrc00's RIB snapshot for 2024-01-01 (single collector):
