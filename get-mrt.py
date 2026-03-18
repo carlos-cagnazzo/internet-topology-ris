@@ -6,6 +6,7 @@ from https://data.ris.ripe.net/ and saves it under the output directory.
 Already-present files are skipped without re-downloading.
 """
 
+import re
 import time
 from datetime import datetime
 from pathlib import Path
@@ -28,6 +29,41 @@ app = typer.Typer(help=__doc__)
 console = Console()
 
 RIS_BASE = "https://data.ris.ripe.net"
+RANGE_RE = re.compile(r"^rrc(\d+)-rrc(\d+)$")
+
+
+def expand_collectors(spec: str) -> list[str]:
+    """Parse a collectors specification string into a list of collector IDs.
+
+    Accepts a comma-separated mix of individual collector names and ranges:
+
+        "rrc00"               → ["rrc00"]
+        "rrc00,rrc04,rrc11"   → ["rrc00", "rrc04", "rrc11"]
+        "rrc00-rrc05"         → ["rrc00", "rrc01", "rrc02", "rrc03", "rrc04", "rrc05"]
+        "rrc00-rrc03,rrc11"   → ["rrc00", "rrc01", "rrc02", "rrc03", "rrc11"]
+
+    Args:
+        spec: Comma-separated collector specification string.
+
+    Returns:
+        Ordered list of collector ID strings with ranges expanded.
+
+    Raises:
+        ValueError: If a range token is malformed or has start > end.
+    """
+    collectors: list[str] = []
+    for token in (t.strip() for t in spec.split(",") if t.strip()):
+        m = RANGE_RE.match(token)
+        if m:
+            start, end = int(m.group(1)), int(m.group(2))
+            if start > end:
+                raise ValueError(
+                    f"Invalid range '{token}': start rrc{start:02d} is after end rrc{end:02d}"
+                )
+            collectors.extend(f"rrc{i:02d}" for i in range(start, end + 1))
+        else:
+            collectors.append(token)
+    return collectors
 
 
 def build_url(collector: str, date: str) -> str:
@@ -80,8 +116,12 @@ def main(
     collectors: str = typer.Option(
         ...,
         "--collectors",
-        help="Comma-separated list of RIS collectors to download from (e.g. rrc00,rrc01,rrc04).",
-        metavar="rrcXX[,rrcXX,...]",
+        help=(
+            "Comma-separated list of RIS collectors, with optional range notation. "
+            "Examples: 'rrc00,rrc04,rrc11' (individual), 'rrc00-rrc10' (range), "
+            "'rrc00-rrc05,rrc11,rrc23' (mixed)."
+        ),
+        metavar="SPEC",
     ),
     date: str = typer.Option(
         ...,
@@ -106,7 +146,11 @@ def main(
         console.print(f"[red]Error:[/red] --date must be in YYYYMMDD format, got '{date}'")
         raise typer.Exit(1)
 
-    collector_list = [c.strip() for c in collectors.split(",") if c.strip()]
+    try:
+        collector_list = expand_collectors(collectors)
+    except ValueError as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(1)
     if not collector_list:
         console.print("[red]Error:[/red] --collectors must not be empty")
         raise typer.Exit(1)
@@ -120,6 +164,7 @@ def main(
 
     downloaded = 0
     skipped = 0
+    failed = 0
 
     progress = Progress(
         SpinnerColumn(),
@@ -144,14 +189,17 @@ def main(
                 else:
                     skipped += 1
             except httpx.HTTPStatusError as exc:
-                console.print(f"  [red]error[/red]  HTTP {exc.response.status_code} for {url}")
+                console.print(f"  [red]error[/red]  HTTP {exc.response.status_code}")
+                failed += 1
             except httpx.RequestError as exc:
                 console.print(f"  [red]error[/red]  {exc}")
+                failed += 1
 
     elapsed = time.monotonic() - start
+    failed_str = f", [red]{failed} failed[/red]" if failed else ""
     console.print(
-        f"\n[bold]Done.[/bold] {downloaded} downloaded, {skipped} skipped "
-        f"— {elapsed:.1f}s elapsed"
+        f"\n[bold]Done.[/bold] {downloaded} downloaded, {skipped} skipped{failed_str}"
+        f" — {elapsed:.1f}s elapsed"
     )
 
 

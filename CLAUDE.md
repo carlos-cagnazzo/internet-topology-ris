@@ -10,11 +10,14 @@ Reconstruct Internet AS-level topology from RIPE RIS MRT files. The pipeline dow
 
 ```bash
 # Run the full pipeline via just
+# NOTE: variable assignments must come BEFORE the recipe name
 just date=20240101 pipeline
 just date=20240101 collectors=rrc00,rrc01,rrc04 pipeline
+just date=20240101 collectors=rrc00-rrc10 pipeline
+just date=20240101 collectors=rrc00-rrc05,rrc11 output="topology-20240101.txt" pipeline
 
 # Run individual steps
-just date=20240101 collectors=rrc00 download
+just date=20240101 collectors=rrc00-rrc25 download
 just process
 just topology
 
@@ -47,7 +50,9 @@ Output is `|`-delimited. Column indices (0-based): 0=record type, 1=element type
 
 Three scripts forming a linear pipeline, orchestrated via `justfile`:
 
-1. **`get-mrt.py`** — Downloads the 00:00 UTC RIB snapshot (`bview`) for a given date from one or more RIS collectors. Flags: `--collectors` (required, comma-separated), `--date` (required, YYYYMMDD), `--output-dir` (default `./mrt`). Skips already-downloaded files. Output filenames include the collector name: `bview.rrcXX.YYYYMMDD.0000.gz`.
+1. **`get-mrt.py`** — Downloads the 00:00 UTC RIB snapshot (`bview`) for a given date from one or more RIS collectors. Flags: `--collectors` (required), `--date` (required, YYYYMMDD), `--output-dir` (default `./mrt`). Skips already-downloaded files; failed transfers are counted and reported but do not abort the run. Output filenames include the collector name: `bview.rrcXX.YYYYMMDD.0000.gz`.
+
+   `--collectors` accepts a comma-separated mix of individual names and ranges: `rrc00`, `rrc00,rrc04,rrc11`, `rrc00-rrc10`, `rrc00-rrc05,rrc11,rrc23`.
 
 2. **`process-mrt.py`** — Calls `bgpreader` on each `.gz` file to extract AS paths, writing `.txt` sidecar files to `--output-dir` (default `./paths`). Each output line contains only the AS path string (space-separated ASNs). Skips files whose `.txt` already exists.
 

@@ -9,12 +9,15 @@
 # │  Created: 2026-03-16                                                │
 # └─────────────────────────────────────────────────────────────────────┘
 #
-# Usage: just [recipe] [variable=value ...]
+# Usage: just [variable=value ...] [recipe]
+#   NOTE: variable assignments must come BEFORE the recipe name.
 #
 # Examples:
-#   just pipeline date=20240101
-#   just pipeline date=20240101 collectors=rrc00,rrc01,rrc04
-#   just download date=20240101 collectors=rrc00,rrc04
+#   just date=20240101 pipeline
+#   just date=20240101 collectors=rrc00,rrc01,rrc04 pipeline
+#   just date=20240101 collectors=rrc00-rrc10 pipeline
+#   just date=20240101 collectors=rrc00-rrc05,rrc11,rrc23 output="topology-20240101.txt" pipeline
+#   just date=20240101 collectors=rrc00-rrc25 download
 #   just process
 #   just topology
 
@@ -22,7 +25,8 @@ collectors := "rrc00"
 date       := ""
 mrt_dir    := "./mrt"
 paths_dir  := "./paths"
-output     := "output/topology.txt"
+output_dir := "./output"
+output     := "topology.txt"
 
 # List available recipes
 default:
@@ -50,4 +54,4 @@ topology:
         --justify-output \
         --filter-registered \
         --input "{{ paths_dir }}/*.txt" \
-        --output {{ output }}
+        --output {{ output_dir }}/{{ output }}
