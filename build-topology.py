@@ -26,7 +26,7 @@ The paths file is built via an external sort to avoid loading millions of paths
 into memory simultaneously.
 """
 
-import subprocess
+import heapq
 import tempfile
 import time
 from glob import glob
@@ -44,6 +44,22 @@ NRO_STATS_URL = "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-del
 NRO_CACHE_FILENAME = "nro-delegated-stats"
 NRO_MAX_AGE_SECONDS = 24 * 3600
 ASN_FIELD_WIDTH = 8
+SORT_CHUNK_LINES = 500_000
+
+
+def path_sort_key(line: str) -> tuple[int, ...]:
+    """Return a fully numeric sort key for an AS path line.
+
+    Converts every ASN token to int so that sorting is numeric across all
+    fields, not lexicographic. E.g. '6 22773' sorts before '37 100'.
+
+    Args:
+        line: Space-separated AS path string, optionally with a trailing newline.
+
+    Returns:
+        Tuple of ints, one per ASN token.
+    """
+    return tuple(int(x) for x in line.split())
 
 
 def fmt(asn: str, justify: bool) -> str:
@@ -136,8 +152,11 @@ def load_registered_asns(stats_path: Path) -> set[str]:
 def sort_and_dedup_paths(tmp_path: Path, out_path: Path, justify: bool) -> int:
     """Sort and deduplicate a raw paths temp file, writing formatted output.
 
-    Uses the system `sort` command to sort and deduplicate on disk, avoiding
-    loading all paths into memory. Paths are sorted numerically by leading ASN.
+    Uses a chunked in-memory sort followed by a heapq.merge k-way merge to
+    handle arbitrarily large files without loading all paths into memory at
+    once. Deduplication is performed during the merge pass by comparing each
+    line to the previously written line (possible because the stream is sorted).
+    Sorting is fully numeric across all ASN fields.
 
     Args:
         tmp_path:  Path to the unsorted, non-deduplicated raw paths temp file.
@@ -147,19 +166,48 @@ def sort_and_dedup_paths(tmp_path: Path, out_path: Path, justify: bool) -> int:
     Returns:
         Number of unique paths written.
     """
-    count = 0
-    sort_proc = subprocess.Popen(
-        ["sort", "-u", "-k1,1n", str(tmp_path)],
-        stdout=subprocess.PIPE,
-        text=True,
-    )
-    with out_path.open("w") as fh:
-        for line in sort_proc.stdout:
-            tokens = line.split()
-            if tokens:
-                fh.write(" ".join(fmt(t, justify) for t in tokens) + "\n")
-                count += 1
-    sort_proc.wait()
+    # Phase 1: read the temp file in chunks, sort each chunk, write to disk
+    chunk_paths: list[Path] = []
+    try:
+        with tmp_path.open() as fh:
+            while True:
+                chunk = [line.rstrip("\n") for line, _ in
+                         zip(fh, range(SORT_CHUNK_LINES)) if line.strip()]
+                if not chunk:
+                    break
+                chunk.sort(key=path_sort_key)
+                cf = tempfile.NamedTemporaryFile(
+                    mode="w", suffix=".chunk", prefix="paths-chunk-", delete=False
+                )
+                cf.write("\n".join(chunk) + "\n")
+                cf.close()
+                chunk_paths.append(Path(cf.name))
+
+        # Phase 2: k-way merge of sorted chunks + deduplicate + write output
+        count = 0
+        if not chunk_paths:
+            out_path.touch()
+            return 0
+
+        chunk_handles = [p.open() for p in chunk_paths]
+        try:
+            with out_path.open("w") as out_fh:
+                prev = None
+                for line in heapq.merge(*chunk_handles, key=path_sort_key):
+                    line = line.rstrip("\n")
+                    if not line or line == prev:
+                        continue
+                    out_fh.write(" ".join(fmt(t, justify) for t in line.split()) + "\n")
+                    prev = line
+                    count += 1
+        finally:
+            for fh in chunk_handles:
+                fh.close()
+
+    finally:
+        for cp in chunk_paths:
+            cp.unlink(missing_ok=True)
+
     return count
 
 

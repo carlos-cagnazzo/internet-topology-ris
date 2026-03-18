@@ -54,7 +54,7 @@ Three scripts forming a linear pipeline, orchestrated via `justfile`:
 3. **`build-topology.py`** — Reads `.txt` path files (via `--input` glob), extracts edges, and writes output files to the directory of `--output` (default `./topology.txt`). Always produces three files:
    - `{stem}.txt` — deduplicated undirected edge list, one `AS1 AS2` per line, sorted numerically
    - `{stem}-asns.txt` — sorted list of all unique ASNs present in the topology
-   - `{stem}-paths.txt` — deduplicated list of unique AS paths seen across all input files, sorted by leading ASN numerically; paths are directional (BGP semantics preserved)
+   - `{stem}-paths.txt` — deduplicated list of unique AS paths seen across all input files, sorted fully numerically across all ASN fields; paths are directional (BGP semantics preserved). Built via a chunked in-memory sort + `heapq.merge` k-way merge to avoid OOM on large inputs — no subprocess or system `sort` dependency.
 
    Optional flags:
    - `--filter-registered` — filters at the **path level**: a path is excluded if *any* of its ASNs is not `assigned` per the NRO delegated stats. Excluded ASNs are collected in `{stem}-dropped-asns.txt`; excluded edges are counted in the summary. The NRO stats file is cached next to the input `.txt` files and re-downloaded only if older than 24 hours.
