@@ -86,11 +86,13 @@ uv run get-mrt.py --collectors rrc00-rrc05,rrc11,rrc23 --date 20251201 --output-
 
 ### Step 2 — Extract AS paths: `process-mrt.py`
 
-Processes downloaded MRT files using `bgpreader`, extracting one AS path per line into sidecar `.txt` files. Already-processed files are skipped.
+Processes downloaded MRT files using `bgpreader`, extracting one AS path per line into three sidecar files per input. A file set is skipped if all three outputs already exist.
 
 AS path cleaning is applied before writing:
 - **Prepending removed**: consecutive duplicate ASNs are collapsed (`64500 64500 64501` → `64500 64501`).
 - **AS sets truncated**: paths containing AS sets (e.g. `{64500,64501}`) are truncated at the set; edges before it are kept.
+
+Address family is detected from the prefix field: prefixes containing `:` are IPv6; all others are IPv4. Each path is written to the combined file and to the appropriate address-family file.
 
 ```
 uv run process-mrt.py --input-files <glob> [--output-dir <dir>]
@@ -99,7 +101,15 @@ uv run process-mrt.py --input-files <glob> [--output-dir <dir>]
 | Flag | Description |
 |---|---|
 | `--input-files` | Glob pattern matching MRT `.gz` files to process. **Required.** |
-| `--output-dir` | Directory to write `.txt` output files. Default: `./paths` |
+| `--output-dir` | Directory to write output files. Default: `./paths` |
+
+#### Output files per MRT input
+
+| File | Description |
+|---|---|
+| `<name>.gz.txt` | All paths (combined, IPv4 + IPv6) |
+| `<name>.gz.v4.txt` | IPv4-only paths |
+| `<name>.gz.v6.txt` | IPv6-only paths |
 
 **Example:**
 ```bash
@@ -177,7 +187,10 @@ just date=20251201 collectors=rrc00-rrc25 output="topology-20251201.txt" pipelin
 # Individual steps
 just date=20251201 collectors=rrc00-rrc25 download
 just process
-just topology
+just topology           # combined + v4 + v6
+just topology-combined  # combined only
+just topology-v4        # IPv4 only
+just topology-v6        # IPv6 only
 ```
 
 Available `just` variables:
@@ -189,7 +202,9 @@ Available `just` variables:
 | `mrt_dir` | `./mrt` | Directory for downloaded MRT files |
 | `paths_dir` | `./paths` | Directory for extracted AS path files |
 | `output_dir` | `./output` | Directory for topology output files |
-| `output` | `topology.txt` | Output filename (stem used for all sidecar files) |
+| `output` | `topology.txt` | Combined output filename |
+| `output_v4` | `topology-v4.txt` | IPv4-only output filename |
+| `output_v6` | `topology-v6.txt` | IPv6-only output filename |
 
 ### Using scripts directly
 

@@ -27,6 +27,8 @@ mrt_dir    := "./mrt"
 paths_dir  := "./paths"
 output_dir := "./output"
 output     := "topology.txt"
+output_v4  := "topology-v4.txt"
+output_v6  := "topology-v6.txt"
 
 # List available recipes
 default:
@@ -48,10 +50,29 @@ process:
         --input-files "{{ mrt_dir }}/*.gz" \
         --output-dir {{ paths_dir }}
 
-# Step 3 — Build deduplicated AS-level topology edge list
-topology:
+# Step 3 — Build combined + per-AF topology edge lists
+topology: (topology-combined) (topology-v4) (topology-v6)
+
+# Step 3a — Combined topology (all prefixes)
+topology-combined:
     uv run build-topology.py \
         --justify-output \
         --filter-registered \
-        --input "{{ paths_dir }}/*.txt" \
+        --input "{{ paths_dir }}/*.gz.txt" \
         --output {{ output_dir }}/{{ output }}
+
+# Step 3b — IPv4-only topology
+topology-v4:
+    uv run build-topology.py \
+        --justify-output \
+        --filter-registered \
+        --input "{{ paths_dir }}/*.gz.v4.txt" \
+        --output {{ output_dir }}/{{ output_v4 }}
+
+# Step 3c — IPv6-only topology
+topology-v6:
+    uv run build-topology.py \
+        --justify-output \
+        --filter-registered \
+        --input "{{ paths_dir }}/*.gz.v6.txt" \
+        --output {{ output_dir }}/{{ output_v6 }}

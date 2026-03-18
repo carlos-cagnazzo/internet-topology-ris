@@ -2,8 +2,13 @@
 process-mrt.py — Extract AS paths from RIPE RIS MRT RIB snapshot files.
 
 For each .gz MRT file matched by the input glob, invokes bgpreader to parse
-the binary data and writes a sidecar .txt file containing one AS path per line
-(space-separated ASNs). Already-processed files (whose .txt exists) are skipped.
+the binary data and writes three sidecar files per input:
+
+  <name>.gz.txt     — all paths (combined)
+  <name>.gz.v4.txt  — IPv4-only paths (prefix contains no ':')
+  <name>.gz.v6.txt  — IPv6-only paths (prefix contains ':')
+
+A file set is skipped if all three output files already exist.
 
 AS path cleaning applied before writing:
   - Consecutive duplicate ASNs (BGP prepending) are collapsed.
@@ -24,6 +29,7 @@ app = typer.Typer(help=__doc__)
 console = Console()
 
 AS_PATH_FIELD = 11
+PREFIX_FIELD = 9
 ELEM_TYPE_FIELD = 1
 
 
@@ -50,15 +56,26 @@ def clean_path(raw: str) -> list[str]:
     return cleaned
 
 
-def process_file(mrt_path: Path, txt_path: Path) -> int:
-    """Run bgpreader on *mrt_path* and write cleaned AS paths to *txt_path*.
+def process_file(
+    mrt_path: Path,
+    txt_path: Path,
+    v4_path: Path,
+    v6_path: Path,
+) -> tuple[int, int, int]:
+    """Run bgpreader on *mrt_path* and write cleaned AS paths to three output files.
+
+    Each path is written to the combined file and to the address-family-specific
+    file determined by the prefix field: prefixes containing ':' are IPv6,
+    all others are IPv4.
 
     Args:
         mrt_path: Path to the input .gz MRT RIB file.
-        txt_path: Path to the output .txt file to create.
+        txt_path: Path to the combined output .txt file.
+        v4_path:  Path to the IPv4-only output .v4.txt file.
+        v6_path:  Path to the IPv6-only output .v6.txt file.
 
     Returns:
-        Number of AS path lines written.
+        Tuple of (total_written, v4_written, v6_written).
     """
     cmd = [
         "bgpreader",
@@ -66,9 +83,9 @@ def process_file(mrt_path: Path, txt_path: Path) -> int:
         "-o", f"rib-file={mrt_path}",
     ]
 
-    written = 0
+    total = v4 = v6 = 0
     with subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True) as proc:
-        with txt_path.open("w") as out:
+        with txt_path.open("w") as out_all, v4_path.open("w") as out_v4, v6_path.open("w") as out_v6:
             for line in proc.stdout:
                 fields = line.rstrip("\n").split("|")
                 if len(fields) <= AS_PATH_FIELD:
@@ -81,10 +98,18 @@ def process_file(mrt_path: Path, txt_path: Path) -> int:
                 tokens = clean_path(raw_path)
                 if len(tokens) < 2:
                     continue
-                out.write(" ".join(tokens) + "\n")
-                written += 1
+                path_line = " ".join(tokens) + "\n"
+                out_all.write(path_line)
+                total += 1
+                prefix = fields[PREFIX_FIELD] if len(fields) > PREFIX_FIELD else ""
+                if ":" in prefix:
+                    out_v6.write(path_line)
+                    v6 += 1
+                else:
+                    out_v4.write(path_line)
+                    v4 += 1
 
-    return written
+    return total, v4, v6
 
 
 @app.command()
@@ -112,7 +137,15 @@ def main(
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    files = [(Path(m), output_dir / (Path(m).name + ".txt")) for m in matches]
+    files = [
+        (
+            Path(m),
+            output_dir / (Path(m).name + ".txt"),
+            output_dir / (Path(m).name + ".v4.txt"),
+            output_dir / (Path(m).name + ".v6.txt"),
+        )
+        for m in matches
+    ]
     total = len(files)
 
     console.print(f"\n[bold]Processing {total} MRT file(s)[/bold]\n")
@@ -131,18 +164,22 @@ def main(
 
     with progress:
         overall = progress.add_task("Files", total=total)
-        for idx, (mrt_path, txt_path) in enumerate(files, 1):
+        for idx, (mrt_path, txt_path, v4_path, v6_path) in enumerate(files, 1):
             progress.update(overall, description=f"[cyan]{mrt_path.name}[/cyan]")
 
-            if txt_path.exists():
+            if txt_path.exists() and v4_path.exists() and v6_path.exists():
                 console.print(f"  [[dim]{idx}/{total}[/dim]] [dim]skip[/dim]  {mrt_path.name}")
                 skipped += 1
                 progress.advance(overall)
                 continue
 
             console.print(f"  [[dim]{idx}/{total}[/dim]] [bold]{mrt_path.name}[/bold]")
-            written = process_file(mrt_path, txt_path)
-            console.print(f"           → {written:,} paths written to [green]{txt_path.name}[/green]")
+            total_written, v4_written, v6_written = process_file(mrt_path, txt_path, v4_path, v6_path)
+            console.print(
+                f"           → {total_written:,} paths "
+                f"([cyan]{v4_written:,}[/cyan] v4, [magenta]{v6_written:,}[/magenta] v6) "
+                f"written to [green]{txt_path.name}[/green]"
+            )
             processed += 1
             progress.advance(overall)
 
