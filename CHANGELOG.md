@@ -4,6 +4,12 @@ All notable changes to this project are documented here, in reverse chronologica
 
 ---
 
+## [84eb077] — README: remove Scale Reference section
+
+Removed the Scale Reference section from the README as it was not useful.
+
+---
+
 ## [2d781b5] — Document lookup-as.py
 
 Updated README with a dedicated Helper Tools section covering all flags, input modes, and practical usage examples. Updated CLAUDE.md with API endpoint reference and concurrency model notes.
