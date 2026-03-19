@@ -273,23 +273,6 @@ uv run lookup-as.py --file output/topology-dropped-asns.txt
 
 ---
 
-## Scale Reference
-
-Processing rrc00's RIB snapshot for 2024-01-01 (single collector):
-
-| Metric | Value |
-|---|---|
-| AS paths extracted | ~55 million |
-| Unique edges | ~237,000 |
-| Unique ASNs | ~83,000 |
-| Unique paths | ~millions |
-| Step 2 time | ~3 min |
-| Step 3 time | ~2–3 min |
-
-Using all 22 active collectors multiplies the input volume proportionally, though unique edge and ASN counts grow sub-linearly as collectors share significant overlap in routing tables.
-
----
-
 ## RIS Collectors
 
 | Collector | Location |
