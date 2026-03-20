@@ -160,12 +160,12 @@ Zero-pads all ASN numbers to 8 digits in every output file, making them fixed-wi
 
 **Examples:**
 ```bash
-# Basic
-uv run build-topology.py --input "./paths/*.txt" --output ./output/topology.txt
+# Combined topology
+uv run build-topology.py --input "./paths/*.gz.txt" --output ./output/topology.txt
 
 # With filtering and zero-padding
 uv run build-topology.py \
-  --input "./paths/*.txt" \
+  --input "./paths/*.gz.txt" \
   --output ./output/topology-20251201.txt \
   --filter-registered \
   --justify-output
@@ -220,10 +220,22 @@ uv run process-mrt.py \
   --input-files "./mrt/*.gz" \
   --output-dir ./paths
 
-# 3. Build topology with filtering and zero-padding
+# 3. Build topology (run once per address family)
 uv run build-topology.py \
-  --input "./paths/*.txt" \
+  --input "./paths/*.gz.txt" \
   --output ./output/topology-20251201.txt \
+  --filter-registered \
+  --justify-output
+
+uv run build-topology.py \
+  --input "./paths/*.gz.v4.txt" \
+  --output ./output/topology-20251201-v4.txt \
+  --filter-registered \
+  --justify-output
+
+uv run build-topology.py \
+  --input "./paths/*.gz.v6.txt" \
+  --output ./output/topology-20251201-v6.txt \
   --filter-registered \
   --justify-output
 ```
