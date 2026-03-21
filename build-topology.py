@@ -27,6 +27,7 @@ into memory simultaneously.
 """
 
 import heapq
+import math
 import tempfile
 import time
 from glob import glob
@@ -149,7 +150,7 @@ def load_registered_asns(stats_path: Path) -> set[str]:
     return registered
 
 
-def sort_and_dedup_paths(tmp_path: Path, out_path: Path, justify: bool) -> int:
+def sort_and_dedup_paths(tmp_path: Path, out_path: Path, justify: bool, total_raw: int) -> int:
     """Sort and deduplicate a raw paths temp file, writing formatted output.
 
     Uses a chunked in-memory sort followed by a heapq.merge k-way merge to
@@ -158,30 +159,49 @@ def sort_and_dedup_paths(tmp_path: Path, out_path: Path, justify: bool) -> int:
     line to the previously written line (possible because the stream is sorted).
     Sorting is fully numeric across all ASN fields.
 
+    Progress is reported via two rich progress bars: one for the chunked sort
+    phase and one for the merge phase.
+
     Args:
         tmp_path:  Path to the unsorted, non-deduplicated raw paths temp file.
         out_path:  Path to write the final sorted, unique, formatted paths.
         justify:   Whether to apply zero-padding via fmt().
+        total_raw: Number of raw (pre-dedup) paths in tmp_path; used to size
+                   the progress bars.
 
     Returns:
         Number of unique paths written.
     """
+    expected_chunks = max(1, math.ceil(total_raw / SORT_CHUNK_LINES))
+
+    progress = Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        MofNCompleteColumn(),
+        TimeElapsedColumn(),
+        console=console,
+    )
+
     # Phase 1: read the temp file in chunks, sort each chunk, write to disk
     chunk_paths: list[Path] = []
     try:
-        with tmp_path.open() as fh:
-            while True:
-                chunk = [line.rstrip("\n") for line, _ in
-                         zip(fh, range(SORT_CHUNK_LINES)) if line.strip()]
-                if not chunk:
-                    break
-                chunk.sort(key=path_sort_key)
-                cf = tempfile.NamedTemporaryFile(
-                    mode="w", suffix=".chunk", prefix="paths-chunk-", delete=False
-                )
-                cf.write("\n".join(chunk) + "\n")
-                cf.close()
-                chunk_paths.append(Path(cf.name))
+        with progress:
+            sort_task = progress.add_task("  Sorting chunks", total=expected_chunks)
+            with tmp_path.open() as fh:
+                while True:
+                    chunk = [line.rstrip("\n") for line, _ in
+                             zip(fh, range(SORT_CHUNK_LINES)) if line.strip()]
+                    if not chunk:
+                        break
+                    chunk.sort(key=path_sort_key)
+                    cf = tempfile.NamedTemporaryFile(
+                        mode="w", suffix=".chunk", prefix="paths-chunk-", delete=False
+                    )
+                    cf.write("\n".join(chunk) + "\n")
+                    cf.close()
+                    chunk_paths.append(Path(cf.name))
+                    progress.advance(sort_task)
 
         # Phase 2: k-way merge of sorted chunks + deduplicate + write output
         count = 0
@@ -191,15 +211,25 @@ def sort_and_dedup_paths(tmp_path: Path, out_path: Path, justify: bool) -> int:
 
         chunk_handles = [p.open() for p in chunk_paths]
         try:
-            with out_path.open("w") as out_fh:
-                prev = None
-                for line in heapq.merge(*chunk_handles, key=path_sort_key):
-                    line = line.rstrip("\n")
-                    if not line or line == prev:
-                        continue
-                    out_fh.write(" ".join(fmt(t, justify) for t in line.split()) + "\n")
-                    prev = line
-                    count += 1
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                BarColumn(),
+                MofNCompleteColumn(),
+                TimeElapsedColumn(),
+                console=console,
+            ) as merge_progress:
+                merge_task = merge_progress.add_task("  Merging & deduplicating", total=total_raw)
+                with out_path.open("w") as out_fh:
+                    prev = None
+                    for line in heapq.merge(*chunk_handles, key=path_sort_key):
+                        line = line.rstrip("\n")
+                        merge_progress.advance(merge_task)
+                        if not line or line == prev:
+                            continue
+                        out_fh.write(" ".join(fmt(t, justify) for t in line.split()) + "\n")
+                        prev = line
+                        count += 1
         finally:
             for fh in chunk_handles:
                 fh.close()
@@ -335,7 +365,7 @@ def main(
         # Sort and deduplicate paths on disk, then write formatted output
         paths_path = output.parent / f"{output.stem}-paths{output.suffix}"
         console.print(f"  Sorting and deduplicating paths → [green]{paths_path}[/green] ...")
-        unique_path_count = sort_and_dedup_paths(tmp_path, paths_path, justify_output)
+        unique_path_count = sort_and_dedup_paths(tmp_path, paths_path, justify_output, total_paths)
         console.print(f"  [bold]{unique_path_count:,}[/bold] unique paths written.")
 
         # Write dropped ASNs sidecar file
