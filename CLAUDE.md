@@ -92,6 +92,8 @@ Three scripts forming a linear pipeline, orchestrated via `justfile`:
 
 ## Helper Tools
 
+**`topology-ops.py`** — Set operations on two topology edge list files. `--op add` produces the union; `--op sub` produces edges in input1 not present in input2. Both plain and zero-padded ASN formats handled transparently (comparison is always numeric). `--justify-output` follows the same convention as other tools.
+
 **`topology-to-gml.py`** — Converts a topology edge list to a GML file for import into Gephi, yEd, Cytoscape, etc. Reads the `AS1 AS2` edge list format (zero-padded or plain). Each node carries an `asn` attribute. With `--enrich`, nodes with degree ≥ `--min-degree` (default 3) are relabeled with their AS holder name from RIPEstat; the node key becomes the display label in GML. Holder names are cached at `~/.cache/internet-topology-ris/as-names.json` with a 60-day TTL to avoid redundant API calls.
 
 Flags: `--input` (required), `--output` (default: input stem + `.gml`), `--enrich/--no-enrich`, `--min-degree` (default 3), `--concurrency` (default 10), `--cache` (cache file path).
