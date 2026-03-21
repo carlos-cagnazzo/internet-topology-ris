@@ -92,6 +92,10 @@ Three scripts forming a linear pipeline, orchestrated via `justfile`:
 
 ## Helper Tools
 
+**`topology-to-gml.py`** — Converts a topology edge list to a GML file for import into Gephi, yEd, Cytoscape, etc. Reads the `AS1 AS2` edge list format (zero-padded or plain). Each node carries an `asn` attribute. With `--enrich`, nodes with degree ≥ `--min-degree` (default 3) are relabeled with their AS holder name from RIPEstat; the node key becomes the display label in GML. Holder names are cached at `~/.cache/internet-topology-ris/as-names.json` with a 60-day TTL to avoid redundant API calls.
+
+Flags: `--input` (required), `--output` (default: input stem + `.gml`), `--enrich/--no-enrich`, `--min-degree` (default 3), `--concurrency` (default 10), `--cache` (cache file path).
+
 **`lookup-as.py`** — Queries the RIPEstat Data API for one or more ASNs. Returns AS holder name, announced prefix count, last-seen timestamp, and announced status. Three input modes: `--asn <N>` (single), `--file <path>` (batch), `--file -` or implicit stdin (pipe). Batch requests run concurrently via `asyncio` + `httpx.AsyncClient`, bounded by `--concurrency` (default 10). A live progress bar is shown for batch mode. `--output` writes a TSV sidecar alongside the terminal table.
 
 API endpoints used (all under `https://stat.ripe.net/data/`):

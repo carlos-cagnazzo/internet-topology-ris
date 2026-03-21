@@ -244,6 +244,45 @@ uv run build-topology.py \
 
 ## Helper Tools
 
+### Topology to GML: `topology-to-gml.py`
+
+Converts a topology edge list to a [GML](https://en.wikipedia.org/wiki/Graph_Modelling_Language) file for import into graph analysis tools such as Gephi, yEd, or Cytoscape.
+
+```
+uv run topology-to-gml.py --input <file> [--output <file>] [options]
+```
+
+| Flag | Description |
+|---|---|
+| `--input` | Topology edge list file (our `topology.txt` format). **Required.** |
+| `--output` | Output `.gml` file. Default: input path with `.gml` extension. |
+| `--enrich` | Fetch AS holder names from RIPEstat and use as node labels. Default: off. |
+| `--min-degree` | Only enrich nodes with degree at or above this threshold. Default: `3`. |
+| `--concurrency` | Max parallel RIPEstat requests when `--enrich` is active. Default: `10`. |
+| `--cache` | Path to the local AS name cache. Default: `~/.cache/internet-topology-ris/as-names.json`. |
+
+Without `--enrich`, each node's label is its ASN. With `--enrich`, nodes above the degree threshold are labeled with the AS holder name (e.g. `GOOGLE - Google LLC`); nodes below threshold keep their ASN as label. Holder names are cached locally for 60 days — repeated runs on different topology files reuse the cache instantly.
+
+**Examples:**
+```bash
+# Basic conversion
+uv run topology-to-gml.py --input output/20230801/topology.txt
+
+# With enrichment, default degree filter (≥ 3)
+uv run topology-to-gml.py \
+  --input output/20230801/topology.txt \
+  --output output/20230801/topology.gml \
+  --enrich
+
+# Only label well-connected nodes (degree ≥ 50), custom output
+uv run topology-to-gml.py \
+  --input output/20230801/topology-v4.txt \
+  --output output/20230801/topology-v4.gml \
+  --enrich --min-degree 50
+```
+
+---
+
 ### AS Lookup: `lookup-as.py`
 
 Queries the [RIPEstat Data API](https://stat.ripe.net/docs/data_api) to retrieve, for one or more ASNs:
