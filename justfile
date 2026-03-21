@@ -18,8 +18,8 @@
 #   just date=20240101 collectors=rrc00-rrc10 pipeline
 #   just date=20240101 collectors=rrc00-rrc05,rrc11,rrc23 output="topology-20240101.txt" pipeline
 #   just date=20240101 collectors=rrc00-rrc25 download
-#   just process
-#   just topology
+#   just date=20240101 process
+#   just date=20240101 topology
 
 collectors := "rrc00"
 date       := ""
@@ -42,13 +42,13 @@ download:
     uv run get-mrt.py \
         --collectors {{ collectors }} \
         --date {{ date }} \
-        --output-dir {{ mrt_dir }}
+        --output-dir {{ mrt_dir }}/{{ date }}
 
 # Step 2 — Extract AS paths from downloaded MRT files
 process:
     uv run process-mrt.py \
-        --input-files "{{ mrt_dir }}/*.gz" \
-        --output-dir {{ paths_dir }}
+        --input-files "{{ mrt_dir }}/{{ date }}/*.gz" \
+        --output-dir {{ paths_dir }}/{{ date }}
 
 # Step 3 — Build combined + per-AF topology edge lists
 topology: (topology-combined) (topology-v4) (topology-v6)
@@ -58,7 +58,7 @@ topology-combined:
     uv run build-topology.py \
         --justify-output \
         --filter-registered \
-        --input "{{ paths_dir }}/*.gz.txt" \
+        --input "{{ paths_dir }}/{{ date }}/*.gz.txt" \
         --output {{ output_dir }}/{{ output }}
 
 # Step 3b — IPv4-only topology
@@ -66,7 +66,7 @@ topology-v4:
     uv run build-topology.py \
         --justify-output \
         --filter-registered \
-        --input "{{ paths_dir }}/*.gz.v4.txt" \
+        --input "{{ paths_dir }}/{{ date }}/*.gz.v4.txt" \
         --output {{ output_dir }}/{{ output_v4 }}
 
 # Step 3c — IPv6-only topology
@@ -74,5 +74,5 @@ topology-v6:
     uv run build-topology.py \
         --justify-output \
         --filter-registered \
-        --input "{{ paths_dir }}/*.gz.v6.txt" \
+        --input "{{ paths_dir }}/{{ date }}/*.gz.v6.txt" \
         --output {{ output_dir }}/{{ output_v6 }}

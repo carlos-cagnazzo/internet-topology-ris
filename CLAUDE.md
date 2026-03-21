@@ -53,7 +53,7 @@ Output is `|`-delimited. Column indices (0-based): 0=record type, 1=element type
 
 Three scripts forming a linear pipeline, orchestrated via `justfile`:
 
-1. **`get-mrt.py`** — Downloads the 00:00 UTC RIB snapshot (`bview`) for a given date from one or more RIS collectors. Flags: `--collectors` (required), `--date` (required, YYYYMMDD), `--output-dir` (default `./mrt`). Skips already-downloaded files; failed transfers are counted and reported but do not abort the run. Output filenames include the collector name: `bview.rrcXX.YYYYMMDD.0000.gz`.
+1. **`get-mrt.py`** — Downloads the 00:00 UTC RIB snapshot (`bview`) for a given date from one or more RIS collectors. Flags: `--collectors` (required), `--date` (required, YYYYMMDD), `--output-dir` (default `./mrt`). Skips already-downloaded files; failed transfers are counted and reported but do not abort the run. Output filenames include the collector name: `bview.rrcXX.YYYYMMDD.0000.gz`. The justfile passes `./mrt/<date>` as `--output-dir` to keep runs isolated by date.
 
    `--collectors` accepts a comma-separated mix of individual names and ranges: `rrc00`, `rrc00,rrc04,rrc11`, `rrc00-rrc10`, `rrc00-rrc05,rrc11,rrc23`.
 
@@ -62,7 +62,7 @@ Three scripts forming a linear pipeline, orchestrated via `justfile`:
    - `<name>.gz.v4.txt` — IPv4-only paths (prefix field has no `:`)
    - `<name>.gz.v6.txt` — IPv6-only paths (prefix field contains `:`)
 
-   Address family is detected from bgpreader column 9 (prefix): presence of `:` indicates IPv6. Each path is written to the combined file and to the appropriate AF file. A file set is skipped only if all three output files already exist.
+   Address family is detected from bgpreader column 9 (prefix): presence of `:` indicates IPv6. Each path is written to the combined file and to the appropriate AF file. A file set is skipped only if all three output files already exist. The justfile passes `./paths/<date>` as `--output-dir`.
 
 3. **`build-topology.py`** — Reads `.txt` path files (via `--input` glob), extracts edges, and writes output files to the directory of `--output` (default `./topology.txt`). The justfile runs it three times: once for `*.gz.txt` (combined), once for `*.gz.v4.txt`, once for `*.gz.v6.txt`. Always produces three files:
    - `{stem}.txt` — deduplicated undirected edge list, one `AS1 AS2` per line, sorted numerically

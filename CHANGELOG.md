@@ -4,6 +4,12 @@ All notable changes to this project are documented here, in reverse chronologica
 
 ---
 
+## [pending] — Date-scoped subdirectories for MRT and path files
+
+The justfile now routes each run into date-stamped subdirectories (`./mrt/<date>/`, `./paths/<date>/`) so that files from different dates never interfere with each other. All three pipeline steps (`download`, `process`, `topology-*`) use `{{ date }}` to scope their input and output directories. README and CLAUDE.md updated accordingly.
+
+---
+
 ## [84eb077] — README: remove Scale Reference section
 
 Removed the Scale Reference section from the README as it was not useful.
