@@ -4,7 +4,7 @@ All notable changes to this project are documented here, in reverse chronologica
 
 ---
 
-## [pending] — New tool: topology-to-gml.py
+## [9dc69e4] — New tool: topology-to-gml.py
 
 Converts a topology edge list to GML format for import into Gephi, yEd, Cytoscape, etc. With `--enrich`, nodes above a configurable degree threshold (`--min-degree`, default 3) are labeled with their AS holder name from RIPEstat. Holder names are cached locally for 60 days (`~/.cache/internet-topology-ris/as-names.json`) to avoid redundant API calls across runs. networkx is used for graph construction and GML serialization.
 
