@@ -36,7 +36,19 @@ from pathlib import Path
 import httpx
 import typer
 from rich.console import Console
-from rich.progress import BarColumn, MofNCompleteColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
+from rich.progress import BarColumn, Progress, ProgressColumn, SpinnerColumn, Task, TextColumn, TimeElapsedColumn
+from rich.text import Text
+
+
+class MofNColumn(ProgressColumn):
+    """Progress column showing M/N with thousands separators."""
+
+    def render(self, task: Task) -> Text:
+        completed = int(task.completed)
+        total = int(task.total) if task.total is not None else None
+        if total is not None:
+            return Text(f"{completed:,}/{total:,}", style="progress.download")
+        return Text(f"{completed:,}", style="progress.download")
 
 app = typer.Typer(help=__doc__)
 console = Console()
@@ -178,7 +190,7 @@ def sort_and_dedup_paths(tmp_path: Path, out_path: Path, justify: bool, total_ra
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
         BarColumn(),
-        MofNCompleteColumn(),
+        MofNColumn(),
         TimeElapsedColumn(),
         console=console,
     )
@@ -215,7 +227,7 @@ def sort_and_dedup_paths(tmp_path: Path, out_path: Path, justify: bool, total_ra
                 SpinnerColumn(),
                 TextColumn("[progress.description]{task.description}"),
                 BarColumn(),
-                MofNCompleteColumn(),
+                MofNColumn(),
                 TimeElapsedColumn(),
                 console=console,
             ) as merge_progress:
@@ -306,7 +318,7 @@ def main(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
         BarColumn(),
-        MofNCompleteColumn(),
+        MofNColumn(),
         TimeElapsedColumn(),
         console=console,
     )
