@@ -59,7 +59,7 @@ topology-combined:
         --justify-output \
         --filter-registered \
         --input "{{ paths_dir }}/{{ date }}/*.gz.txt" \
-        --output {{ output_dir }}/{{ output }}
+        --output {{ output_dir }}/{{ date }}/{{ output }}
 
 # Step 3b — IPv4-only topology
 topology-v4:
@@ -67,7 +67,7 @@ topology-v4:
         --justify-output \
         --filter-registered \
         --input "{{ paths_dir }}/{{ date }}/*.gz.v4.txt" \
-        --output {{ output_dir }}/{{ output_v4 }}
+        --output {{ output_dir }}/{{ date }}/{{ output_v4 }}
 
 # Step 3c — IPv6-only topology
 topology-v6:
@@ -75,4 +75,4 @@ topology-v6:
         --justify-output \
         --filter-registered \
         --input "{{ paths_dir }}/{{ date }}/*.gz.v6.txt" \
-        --output {{ output_dir }}/{{ output_v6 }}
+        --output {{ output_dir }}/{{ date }}/{{ output_v6 }}

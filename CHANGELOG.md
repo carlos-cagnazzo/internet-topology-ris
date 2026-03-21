@@ -4,6 +4,12 @@ All notable changes to this project are documented here, in reverse chronologica
 
 ---
 
+## [pending] — Scope output directory by date
+
+Topology output files are now written to `./output/<date>/` instead of `./output/`, consistent with the MRT and paths directories. Each pipeline run is now fully isolated across all three directory trees.
+
+---
+
 ## [f4c94e5] — Date-scoped subdirectories for MRT and path files
 
 The justfile now routes each run into date-stamped subdirectories (`./mrt/<date>/`, `./paths/<date>/`) so that files from different dates never interfere with each other. All three pipeline steps (`download`, `process`, `topology-*`) use `{{ date }}` to scope their input and output directories. README and CLAUDE.md updated accordingly.

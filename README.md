@@ -166,7 +166,7 @@ uv run build-topology.py --input "./paths/*.gz.txt" --output ./output/topology.t
 # With filtering and zero-padding
 uv run build-topology.py \
   --input "./paths/*.gz.txt" \
-  --output ./output/topology-20251201.txt \
+  --output ./output/20251201/topology-20251201.txt \
   --filter-registered \
   --justify-output
 ```
@@ -201,7 +201,7 @@ Available `just` variables:
 | `date` | *(required for download)* | Snapshot date in `YYYYMMDD` format |
 | `mrt_dir` | `./mrt` | Root directory for downloaded MRT files (date subdir created automatically) |
 | `paths_dir` | `./paths` | Root directory for extracted AS path files (date subdir created automatically) |
-| `output_dir` | `./output` | Directory for topology output files |
+| `output_dir` | `./output` | Root directory for topology output files (date subdir created automatically) |
 | `output` | `topology.txt` | Combined output filename |
 | `output_v4` | `topology-v4.txt` | IPv4-only output filename |
 | `output_v6` | `topology-v6.txt` | IPv6-only output filename |
@@ -223,19 +223,19 @@ uv run process-mrt.py \
 # 3. Build topology (run once per address family)
 uv run build-topology.py \
   --input "./paths/20251201/*.gz.txt" \
-  --output ./output/topology-20251201.txt \
+  --output ./output/20251201/topology-20251201.txt \
   --filter-registered \
   --justify-output
 
 uv run build-topology.py \
   --input "./paths/20251201/*.gz.v4.txt" \
-  --output ./output/topology-20251201-v4.txt \
+  --output ./output/20251201/topology-20251201-v4.txt \
   --filter-registered \
   --justify-output
 
 uv run build-topology.py \
   --input "./paths/20251201/*.gz.v6.txt" \
-  --output ./output/topology-20251201-v6.txt \
+  --output ./output/20251201/topology-20251201-v6.txt \
   --filter-registered \
   --justify-output
 ```
