@@ -4,7 +4,7 @@ All notable changes to this project are documented here, in reverse chronologica
 
 ---
 
-## [pending] — New tool: topology-ops.py
+## [fc6037a] — New tool: topology-ops.py
 
 Adds `topology-ops.py` for set operations on topology edge list files. Supports `--op add` (union) and `--op sub` (difference). Edges are compared numerically after stripping leading zeros, so plain and zero-padded inputs are handled transparently. Output format follows the same `--justify-output` convention as the rest of the pipeline.
 
