@@ -4,7 +4,7 @@ All notable changes to this project are documented here, in reverse chronologica
 
 ---
 
-## [pending] — Scope output directory by date
+## [6ded21d] — Scope output directory by date
 
 Topology output files are now written to `./output/<date>/` instead of `./output/`, consistent with the MRT and paths directories. Each pipeline run is now fully isolated across all three directory trees.
 
