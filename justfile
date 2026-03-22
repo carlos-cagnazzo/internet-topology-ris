@@ -24,6 +24,7 @@
 collectors := "rrc00"
 date       := ""
 mrt_dir    := "./mrt"
+mrt_ext    := "gz"
 paths_dir  := "./paths"
 output_dir := "./output"
 output     := "topology.txt"
@@ -47,7 +48,7 @@ download:
 # Step 2 — Extract AS paths from downloaded MRT files
 process:
     uv run process-mrt.py \
-        --input-files "{{ mrt_dir }}/{{ date }}/*.gz" \
+        --input-files "{{ mrt_dir }}/{{ date }}/*.{{ mrt_ext }}" \
         --output-dir {{ paths_dir }}/{{ date }}
 
 # Step 3 — Build combined + per-AF topology edge lists

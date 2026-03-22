@@ -84,6 +84,42 @@ uv run get-mrt.py --collectors rrc00-rrc05,rrc11,rrc23 --date 20251201 --output-
 
 ---
 
+### Step 1b — Download RouteViews RIB snapshots: `get-routeviews.py`
+
+Downloads the 00:00 UTC RIB snapshot for a given date from one or more RouteViews collectors. Same behaviour as `get-mrt.py`: already-downloaded files are skipped, failed transfers are reported without aborting the run. Output files are `.bz2` format.
+
+```
+uv run get-routeviews.py --collectors <spec> --date <YYYYMMDD> [--output-dir <dir>]
+```
+
+| Flag | Description |
+|---|---|
+| `--collectors` | Comma-separated RouteViews collector IDs. **Required.** |
+| `--date` | Date of the 00:00 UTC RIB snapshot in `YYYYMMDD` format. **Required.** |
+| `--output-dir` | Directory to store downloaded `.bz2` files. Default: `./mrt` |
+
+Known collectors:
+
+| Collector ID | Location |
+|---|---|
+| `route-views.amsix` | AMS-IX, Amsterdam |
+| `ix-br2.gru` | São Paulo, Brazil |
+
+**Example:**
+```bash
+uv run get-routeviews.py \
+  --collectors route-views.amsix,ix-br2.gru \
+  --date 20251201 \
+  --output-dir ./mrt/20251201
+```
+
+To process RouteViews files through the pipeline, pass `mrt_ext=bz2` to the `process` step:
+```bash
+just date=20251201 mrt_ext=bz2 process
+```
+
+---
+
 ### Step 2 — Extract AS paths: `process-mrt.py`
 
 Processes downloaded MRT files using `bgpreader`, extracting one AS path per line into three sidecar files per input. A file set is skipped if all three outputs already exist.
@@ -200,6 +236,7 @@ Available `just` variables:
 | `collectors` | `rrc00` | Collector specification (supports range notation) |
 | `date` | *(required for download)* | Snapshot date in `YYYYMMDD` format |
 | `mrt_dir` | `./mrt` | Root directory for downloaded MRT files (date subdir created automatically) |
+| `mrt_ext` | `gz` | MRT file extension: `gz` for RIPE RIS, `bz2` for RouteViews |
 | `paths_dir` | `./paths` | Root directory for extracted AS path files (date subdir created automatically) |
 | `output_dir` | `./output` | Root directory for topology output files (date subdir created automatically) |
 | `output` | `topology.txt` | Combined output filename |

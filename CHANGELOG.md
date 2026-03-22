@@ -4,6 +4,14 @@ All notable changes to this project are documented here, in reverse chronologica
 
 ---
 
+## [pending] — Add RouteViews support
+
+New `get-routeviews.py` downloader for RouteViews RIB snapshots (`.bz2` format). Same interface as `get-mrt.py`: `--collectors`, `--date`, `--output-dir`, streaming download with progress bar, skip-if-exists, per-collector error handling. URL pattern: `https://archive.routeviews.org/<collector>/bgpdata/YYYY.MM/RIBS/rib.YYYYMMDD.0000.bz2`. Initial collectors: `route-views.amsix` (AMS-IX) and `ix-br2.gru` (São Paulo).
+
+`process-mrt.py` already handles `.bz2` transparently via bgpreader. The justfile gains a `mrt_ext` variable (default `gz`); pass `mrt_ext=bz2` to process RouteViews files.
+
+---
+
 ## [fc6037a] — New tool: topology-ops.py
 
 Adds `topology-ops.py` for set operations on topology edge list files. Supports `--op add` (union) and `--op sub` (difference). Edges are compared numerically after stripping leading zeros, so plain and zero-padded inputs are handled transparently. Output format follows the same `--justify-output` convention as the rest of the pipeline.
