@@ -4,7 +4,7 @@ All notable changes to this project are documented here, in reverse chronologica
 
 ---
 
-## [pending] — Add RouteViews support
+## [f4a20d0] — Add RouteViews support
 
 New `get-routeviews.py` downloader for RouteViews RIB snapshots (`.bz2` format). Same interface as `get-mrt.py`: `--collectors`, `--date`, `--output-dir`, streaming download with progress bar, skip-if-exists, per-collector error handling. URL pattern: `https://archive.routeviews.org/<collector>/bgpdata/YYYY.MM/RIBS/rib.YYYYMMDD.0000.bz2`. Initial collectors: `route-views.amsix` (AMS-IX) and `ix-br2.gru` (São Paulo).
 
