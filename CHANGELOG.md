@@ -4,7 +4,7 @@ All notable changes to this project are documented here, in reverse chronologica
 
 ---
 
-## [pending] — build-topology.py: per-file cache, --no-paths, parallel processing
+## [a1e1e41] — build-topology.py: per-file cache, --no-paths, parallel processing
 
 Three performance improvements to `build-topology.py` for large-scale runs (hundreds of millions of paths across 26+ collectors):
 
