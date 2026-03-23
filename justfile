@@ -16,7 +16,7 @@
 #   just date=20240101 pipeline
 #   just date=20240101 collectors=rrc00,rrc01,rrc04 pipeline
 #   just date=20240101 collectors=rrc00-rrc10 pipeline
-#   just date=20240101 collectors=rrc00-rrc05,rrc11,rrc23 output="topology-20240101.txt" pipeline
+#   just date=20240101 collectors=rrc00-rrc05,rrc11,rrc23 pipeline
 #   just date=20240101 collectors=rrc00-rrc25 download
 #   just date=20240101 process
 #   just date=20240101 topology
@@ -27,9 +27,9 @@ mrt_dir    := "./mrt"
 mrt_ext    := "gz"
 paths_dir  := "./paths"
 output_dir := "./output"
-output     := "topology.txt"
-output_v4  := "topology-v4.txt"
-output_v6  := "topology-v6.txt"
+output     := "topology-" + date + ".txt"
+output_v4  := "topology-" + date + "-v4.txt"
+output_v6  := "topology-" + date + "-v6.txt"
 
 # List available recipes
 default:
