@@ -4,6 +4,20 @@ All notable changes to this project are documented here, in reverse chronologica
 
 ---
 
+## [pending] — build-topology.py: per-file cache, --no-paths, parallel processing
+
+Three performance improvements to `build-topology.py` for large-scale runs (hundreds of millions of paths across 26+ collectors):
+
+**Per-file result cache** — after processing each input `.txt` file, two sidecar files are written next to it: a `.topcache` pickle (edges set, ASNs set, dropped ASNs set, raw path count) and a `.topcache.paths` file (sorted+deduplicated paths for that file). On subsequent runs, valid cache entries are loaded directly without re-reading the input. Cache validity is keyed on `(input mtime, NRO stats mtime, filter_registered)` — any change to the input or the filter setting invalidates the cache automatically.
+
+**`--no-paths` flag** — skips writing the paths sidecar entirely. Eliminates the most expensive step (per-file sort + final k-way merge) when only the edge list and ASN list are needed.
+
+**Parallel file processing** — input files are now processed concurrently via `ProcessPoolExecutor`. Each worker handles one file independently, checks/writes its own cache, and returns the accumulated sets to the main process. The `--workers N` flag controls parallelism; default is `cpu_count`. The final paths merge is still a single-threaded `heapq.merge` across all per-file sorted cache files.
+
+The summary line now shows `(N from cache)` alongside the file count.
+
+---
+
 ## [f4a20d0] — Add RouteViews support
 
 New `get-routeviews.py` downloader for RouteViews RIB snapshots (`.bz2` format). Same interface as `get-mrt.py`: `--collectors`, `--date`, `--output-dir`, streaming download with progress bar, skip-if-exists, per-collector error handling. URL pattern: `https://archive.routeviews.org/<collector>/bgpdata/YYYY.MM/RIBS/rib.YYYYMMDD.0000.bz2`. Initial collectors: `route-views.amsix` (AMS-IX) and `ix-br2.gru` (São Paulo).

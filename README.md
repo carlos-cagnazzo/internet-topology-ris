@@ -168,6 +168,8 @@ uv run build-topology.py --input <glob> [--output <file>] [options]
 | `--output` | Output file for the edge list. Default: `./topology.txt` |
 | `--filter-registered` | Drop any path containing an unregistered ASN (see below). Default: off. |
 | `--justify-output` | Zero-pad all ASNs to 8 digits in all output files. Default: off. |
+| `--no-paths` | Skip building the paths file (fastest mode for edge-list-only runs). Default: off. |
+| `--workers` | Number of parallel file-processing workers. Default: `cpu_count`. |
 
 #### Output files
 

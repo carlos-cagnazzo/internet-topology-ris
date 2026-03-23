@@ -69,11 +69,17 @@ Three scripts forming a linear pipeline, orchestrated via `justfile`:
 3. **`build-topology.py`** — Reads `.txt` path files (via `--input` glob), extracts edges, and writes output files to the directory of `--output` (default `./topology.txt`). The justfile runs it three times: once for `*.gz.txt` (combined), once for `*.gz.v4.txt`, once for `*.gz.v6.txt`. Always produces three files:
    - `{stem}.txt` — deduplicated undirected edge list, one `AS1 AS2` per line, sorted numerically
    - `{stem}-asns.txt` — sorted list of all unique ASNs present in the topology
-   - `{stem}-paths.txt` — deduplicated list of unique AS paths seen across all input files, sorted fully numerically across all ASN fields; paths are directional (BGP semantics preserved). Built via a chunked in-memory sort + `heapq.merge` k-way merge to avoid OOM on large inputs — no subprocess or system `sort` dependency.
+   - `{stem}-paths.txt` — deduplicated list of unique AS paths seen across all input files, sorted fully numerically across all ASN fields; paths are directional (BGP semantics preserved). Per-file paths are sorted and deduplicated in worker processes via chunked sort + `heapq.merge`; the final step merges all per-file sorted files into one globally deduplicated output.
 
    Optional flags:
-   - `--filter-registered` — filters at the **path level**: a path is excluded if *any* of its ASNs is not `assigned` per the NRO delegated stats. Excluded ASNs are collected in `{stem}-dropped-asns.txt`; excluded edges are counted in the summary. The NRO stats file is cached next to the input `.txt` files and re-downloaded only if older than 24 hours.
+   - `--filter-registered` — filters at the **path level**: a path is excluded if *any* of its ASNs is not `assigned` per the NRO delegated stats. Excluded ASNs are collected in `{stem}-dropped-asns.txt`. The NRO stats file is cached next to the input `.txt` files and re-downloaded only if older than 24 hours.
    - `--justify-output` — zero-pads all ASNs to 8 digits in all output files (e.g. `6057` → `00006057`). Does not affect terminal output.
+   - `--no-paths` — skip the paths sort/merge step entirely. Use when only the edge list and ASN list are needed.
+   - `--workers N` — number of parallel `ProcessPoolExecutor` workers (default: `cpu_count`). Each worker processes one input file independently.
+
+   **Per-file cache**: after processing, each input file gets two sidecar files written next to it:
+   - `<name>.topcache` — pickle with edges set, asns set, dropped_asns set, and raw path count. Keyed on (input mtime, NRO stats mtime, filter_registered flag). On subsequent runs, valid cache entries are loaded without re-reading the input file.
+   - `<name>.topcache.paths` — sorted+deduplicated paths for that file (plain, un-justified). Used directly as input to the final `heapq.merge` step. Not written when `--no-paths` is active.
 
 ## Conventions
 
