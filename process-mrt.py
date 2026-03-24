@@ -132,8 +132,8 @@ def main(
 
     matches = sorted(glob(input_files))
     if not matches:
-        console.print(f"[red]Error:[/red] No files matched: {input_files}")
-        raise typer.Exit(1)
+        console.print(f"[dim]No files matched: {input_files} — skipping.[/dim]")
+        raise typer.Exit(0)
 
     output_dir.mkdir(parents=True, exist_ok=True)
 

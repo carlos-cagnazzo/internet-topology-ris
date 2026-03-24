@@ -64,7 +64,7 @@ Three scripts forming a linear pipeline, orchestrated via `justfile`:
    - `<name>.gz.v4.txt` — IPv4-only paths (prefix field has no `:`)
    - `<name>.gz.v6.txt` — IPv6-only paths (prefix field contains `:`)
 
-   Address family is detected from bgpreader column 9 (prefix): presence of `:` indicates IPv6. Each path is written to the combined file and to the appropriate AF file. A file set is skipped only if all three output files already exist. The justfile passes `./paths/<date>` as `--output-dir`. bgpreader handles both `.gz` and `.bz2` inputs transparently. The justfile `process` recipe uses `*.{{ mrt_ext }}` (default `gz`); pass `mrt_ext=bz2` for RouteViews files.
+   Address family is detected from bgpreader column 9 (prefix): presence of `:` indicates IPv6. Each path is written to the combined file and to the appropriate AF file. A file set is skipped only if all three output files already exist. The justfile passes `./paths/<date>` as `--output-dir`. bgpreader handles both `.gz` and `.bz2` inputs transparently. The justfile `process` recipe runs twice — once for `*.gz` and once for `*.bz2` — so both RIPE RIS and RouteViews files are processed automatically. If no files match a glob, the invocation prints a notice and exits cleanly.
 
 3. **`build-topology.py`** — Reads `.txt` path files (via `--input` glob), extracts edges, and writes output files to the directory of `--output` (default `./topology.txt`). The justfile runs it three times: once for `*.gz.txt` (combined), once for `*.gz.v4.txt`, once for `*.gz.v6.txt`. Always produces three files:
    - `{stem}.txt` — deduplicated undirected edge list, one `AS1 AS2` per line, sorted numerically

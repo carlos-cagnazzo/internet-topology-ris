@@ -113,10 +113,7 @@ uv run get-routeviews.py \
   --output-dir ./mrt/20251201
 ```
 
-To process RouteViews files through the pipeline, pass `mrt_ext=bz2` to the `process` step:
-```bash
-just date=20251201 mrt_ext=bz2 process
-```
+RouteViews `.bz2` files are processed automatically alongside RIPE RIS `.gz` files — no extra flags needed.
 
 ---
 
@@ -238,7 +235,6 @@ Available `just` variables:
 | `collectors` | `rrc00` | Collector specification (supports range notation) |
 | `date` | *(required for download)* | Snapshot date in `YYYYMMDD` format |
 | `mrt_dir` | `./mrt` | Root directory for downloaded MRT files (date subdir created automatically) |
-| `mrt_ext` | `gz` | MRT file extension: `gz` for RIPE RIS, `bz2` for RouteViews |
 | `paths_dir` | `./paths` | Root directory for extracted AS path files (date subdir created automatically) |
 | `output_dir` | `./output` | Root directory for topology output files (date subdir created automatically) |
 | `output` | `topology.txt` | Combined output filename |
