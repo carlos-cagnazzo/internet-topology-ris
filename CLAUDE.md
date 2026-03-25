@@ -14,15 +14,19 @@ Reconstruct Internet AS-level topology from RIPE RIS MRT files. The pipeline dow
 just date=20240101 pipeline
 just date=20240101 collectors=rrc00,rrc01,rrc04 pipeline
 just date=20240101 collectors=rrc00-rrc10 pipeline
-just date=20240101 collectors=rrc00-rrc05,rrc11 output="topology-20240101.txt" pipeline
+just date=20240101 collectors=rrc00-rrc05,rrc11 pipeline
 
 # Run individual steps
 just date=20240101 collectors=rrc00-rrc25 download
-just process
-just topology          # combined + v4 + v6
-just topology-combined
-just topology-v4
-just topology-v6
+just date=20240101 process
+just date=20240101 topology          # combined + v4 + v6
+just date=20240101 topology-combined
+just date=20240101 topology-v4
+just date=20240101 topology-v6
+
+# Pack and publish output products
+just date=20240101 pack-and-publish
+just date=20240101 pubpoint=/srv/data/topo pack-and-publish
 
 # Run a script directly
 uv run get-mrt.py --collectors rrc00,rrc01 --date 20240101
@@ -66,13 +70,14 @@ Three scripts forming a linear pipeline, orchestrated via `justfile`:
 
    Address family is detected from bgpreader column 9 (prefix): presence of `:` indicates IPv6. Each path is written to the combined file and to the appropriate AF file. A file set is skipped only if all three output files already exist. The justfile passes `./paths/<date>` as `--output-dir`. bgpreader handles both `.gz` and `.bz2` inputs transparently. The justfile `process` recipe runs twice — once for `*.gz` and once for `*.bz2` — so both RIPE RIS and RouteViews files are processed automatically. If no files match a glob, the invocation prints a notice and exits cleanly.
 
-3. **`build-topology.py`** — Reads `.txt` path files (via `--input` glob), extracts edges, and writes output files to the directory of `--output` (default `./topology.txt`). The justfile runs it three times: once for `*.gz.txt` (combined), once for `*.gz.v4.txt`, once for `*.gz.v6.txt`. Always produces three files:
+3. **`build-topology.py`** — Reads `.txt` path files (via `--input` glob, repeatable), extracts edges, and writes output files to the directory of `--output` (default `./topology.txt`). The justfile runs it three times, passing both `*.gz.*` and `*.bz2.*` globs so RIPE RIS and RouteViews files are merged seamlessly. Always produces three files:
    - `{stem}.txt` — deduplicated undirected edge list, one `AS1 AS2` per line, sorted numerically
    - `{stem}-asns.txt` — sorted list of all unique ASNs present in the topology
    - `{stem}-paths.txt` — deduplicated list of unique AS paths seen across all input files, sorted fully numerically across all ASN fields; paths are directional (BGP semantics preserved). Per-file paths are sorted and deduplicated in worker processes via chunked sort + `heapq.merge`; the final step merges all per-file sorted files into one globally deduplicated output.
 
    Optional flags:
-   - `--filter-registered` — filters at the **path level**: a path is excluded if *any* of its ASNs is not `assigned` per the NRO delegated stats. Excluded ASNs are collected in `{stem}-dropped-asns.txt`. The NRO stats file is cached next to the input `.txt` files and re-downloaded only if older than 24 hours.
+   - `--filter-registered` — filters at the **path level**: a path is excluded if *any* of its ASNs is not `assigned` per the NRO delegated stats. Excluded ASNs are collected in `{stem}-dropped-asns.txt`. The stats file is cached next to the input `.txt` files; see `--date` for which file is fetched.
+   - `--date YYYYMMDD` — when provided alongside `--filter-registered`, fetches the historical NRO stats snapshot for that date (`https://ftp.ripe.net/pub/stats/ripencc/nro-stats/{YYYYMMDD}/nro-delegated-stats`) instead of the latest file. Historical files are cached permanently (they never change). Without `--date`, the latest file is used and re-downloaded if older than 24 hours. Cache filenames: `nro-delegated-stats` (latest) or `nro-delegated-stats-{YYYYMMDD}` (historical), stored next to the input `.txt` files.
    - `--justify-output` — zero-pads all ASNs to 8 digits in all output files (e.g. `6057` → `00006057`). Does not affect terminal output.
    - `--no-paths` — skip the paths sort/merge step entirely. Use when only the edge list and ASN list are needed.
    - `--workers N` — number of parallel `ProcessPoolExecutor` workers (default: `cpu_count`). Each worker processes one input file independently.
@@ -91,10 +96,13 @@ Three scripts forming a linear pipeline, orchestrated via `justfile`:
   - Edges are stored as integer-ordered tuples: `(a, b) if int(a) < int(b) else (b, a)`. **Do not use string `min`/`max`** — lexicographic order differs from numeric order for ASNs (e.g. `"22773" < "6"` as strings).
 - `bview` files are the RIB snapshot type used by RIS.
 - Output data files (`topology*.txt`, `nro-delegated-stats`) are excluded from version control via `.gitignore`.
+- **`DATA-README.md`** — template for the human-readable README included in every published archive. Uses `{date}` as a placeholder; `pack-and-publish` substitutes the actual date via `sed` before archiving.
+- **`pack-and-publish`** just recipe — packs `./output/{date}/` into `topology-{date}.tar.bz2`, injects the substituted `DATA-README.md` as `README.md`, prompts before overwriting at destination, then `sudo cp`s to `pubpoint` (default `/var/www/html/topo`). Standalone — does not depend on `topology`.
 
 ## NRO Delegated Stats
 
-- URL: `https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats`
+- Latest URL: `https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats`
+- Historical URL: `https://ftp.ripe.net/pub/stats/ripencc/nro-stats/{YYYYMMDD}/nro-delegated-stats`
 - Format: `|`-delimited. ASN records have field[2]`==`asn`. Valid statuses: `assigned` (keep), `available`/`reserved` (discard). Skip lines where field[1]`==`*` (summary) or field[4]`==`summary`.
 - field[3] = start ASN, field[4] = count (expand range with `range(start, start+count)`).
 

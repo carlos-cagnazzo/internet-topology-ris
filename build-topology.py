@@ -69,8 +69,10 @@ class MofNColumn(ProgressColumn):
 app = typer.Typer(help=__doc__)
 console = Console()
 
-NRO_STATS_URL = "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats"
-NRO_CACHE_FILENAME = "nro-delegated-stats"
+NRO_STATS_URL_LATEST = "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats"
+NRO_STATS_URL_HISTORICAL = "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/{date}/nro-delegated-stats"
+NRO_CACHE_FILENAME_LATEST = "nro-delegated-stats"
+NRO_CACHE_FILENAME_DATED = "nro-delegated-stats-{date}"
 NRO_MAX_AGE_SECONDS = 24 * 3600
 ASN_FIELD_WIDTH = 8
 SORT_CHUNK_LINES = 500_000
@@ -157,28 +159,40 @@ def fmt(asn: str, justify: bool) -> str:
 # ---------------------------------------------------------------------------
 
 
-def fetch_nro_stats(cache_path: Path) -> Path:
-    """Return path to a fresh NRO delegated stats file, downloading if needed.
+def fetch_nro_stats(cache_dir: Path, date: "str | None") -> Path:
+    """Return path to a local NRO delegated stats file, downloading if needed.
 
-    The file is cached at *cache_path*. If it exists and is less than 24 hours
-    old it is returned as-is. Otherwise it is downloaded from the NRO server.
+    When *date* is provided, fetches the historical snapshot for that date and
+    caches it permanently (historical files never change). When *date* is None,
+    fetches the latest file and re-downloads if the cache is more than 24 hours
+    old.
 
     Args:
-        cache_path: Local path where the stats file should be cached.
+        cache_dir: Directory where the stats file should be cached.
+        date:      Snapshot date in YYYYMMDD format, or None for the latest file.
 
     Returns:
         Path to the cached file.
     """
-    if cache_path.exists():
-        age = time.time() - cache_path.stat().st_mtime
-        if age < NRO_MAX_AGE_SECONDS:
-            console.print(
-                f"  [dim]NRO stats cache is {age / 3600:.1f}h old — reusing[/dim] {cache_path}"
-            )
+    if date:
+        url = NRO_STATS_URL_HISTORICAL.format(date=date)
+        cache_path = cache_dir / NRO_CACHE_FILENAME_DATED.format(date=date)
+        if cache_path.exists():
+            console.print(f"  [dim]NRO stats ({date}) cached — reusing[/dim] {cache_path}")
             return cache_path
+    else:
+        url = NRO_STATS_URL_LATEST
+        cache_path = cache_dir / NRO_CACHE_FILENAME_LATEST
+        if cache_path.exists():
+            age = time.time() - cache_path.stat().st_mtime
+            if age < NRO_MAX_AGE_SECONDS:
+                console.print(
+                    f"  [dim]NRO stats cache is {age / 3600:.1f}h old — reusing[/dim] {cache_path}"
+                )
+                return cache_path
 
     console.print(f"  Downloading NRO delegated stats → [green]{cache_path}[/green]")
-    with httpx.stream("GET", NRO_STATS_URL, follow_redirects=True, timeout=60) as response:
+    with httpx.stream("GET", url, follow_redirects=True, timeout=60) as response:
         response.raise_for_status()
         cache_path.parent.mkdir(parents=True, exist_ok=True)
         with cache_path.open("wb") as fh:
@@ -518,10 +532,10 @@ def _merge_paths(
 
 @app.command()
 def main(
-    input_files: str = typer.Option(
+    input_files: list[str] = typer.Option(
         ...,
         "--input",
-        help='Glob pattern matching AS path .txt files to process (e.g. "./paths/*.txt").',
+        help='Glob pattern matching AS path .txt files. Repeat to include multiple patterns.',
         metavar="GLOB",
     ),
     output: Path = typer.Option(
@@ -562,13 +576,23 @@ def main(
         help="Number of parallel file-processing workers. 0 = use cpu_count.",
         show_default=True,
     ),
+    date: "str | None" = typer.Option(
+        None,
+        "--date",
+        help=(
+            "Date of the RIB snapshot in YYYYMMDD format. When provided, the "
+            "matching historical NRO delegated stats file is used for filtering "
+            "instead of the latest. Defaults to latest when omitted."
+        ),
+        metavar="YYYYMMDD",
+    ),
 ) -> None:
     """Build a deduplicated undirected AS-level topology edge list from AS path files."""
     start = time.monotonic()
 
-    matches = sorted(glob(input_files))
+    matches = sorted({f for pattern in input_files for f in glob(pattern)})
     if not matches:
-        console.print(f"[red]Error:[/red] No files matched: {input_files}")
+        console.print(f"[red]Error:[/red] No files matched: {', '.join(input_files)}")
         raise typer.Exit(1)
 
     total_files = len(matches)
@@ -585,10 +609,10 @@ def main(
     nro_mtime = 0.0
     if filter_registered:
         input_dir = Path(matches[0]).parent
-        cache_path = input_dir / NRO_CACHE_FILENAME
         console.print()
-        registered_asns = load_registered_asns(fetch_nro_stats(cache_path))
-        nro_mtime = cache_path.stat().st_mtime
+        nro_path = fetch_nro_stats(input_dir, date)
+        registered_asns = load_registered_asns(nro_path)
+        nro_mtime = nro_path.stat().st_mtime
         console.print(
             f"  [bold]{len(registered_asns):,}[/bold] assigned ASNs loaded from NRO stats\n"
         )

@@ -29,6 +29,7 @@ output_dir := "./output"
 output     := "topology-" + date + ".txt"
 output_v4  := "topology-" + date + "-v4.txt"
 output_v6  := "topology-" + date + "-v6.txt"
+pubpoint   := "/var/www/html/topo"
 
 # List available recipes
 default:
@@ -61,7 +62,9 @@ topology-combined:
     uv run build-topology.py \
         --justify-output \
         --filter-registered \
+        --date {{ date }} \
         --input "{{ paths_dir }}/{{ date }}/*.gz.txt" \
+        --input "{{ paths_dir }}/{{ date }}/*.bz2.txt" \
         --output {{ output_dir }}/{{ date }}/{{ output }}
 
 # Step 3b — IPv4-only topology
@@ -69,7 +72,9 @@ topology-v4:
     uv run build-topology.py \
         --justify-output \
         --filter-registered \
+        --date {{ date }} \
         --input "{{ paths_dir }}/{{ date }}/*.gz.v4.txt" \
+        --input "{{ paths_dir }}/{{ date }}/*.bz2.v4.txt" \
         --output {{ output_dir }}/{{ date }}/{{ output_v4 }}
 
 # Step 3c — IPv6-only topology
@@ -77,5 +82,38 @@ topology-v6:
     uv run build-topology.py \
         --justify-output \
         --filter-registered \
+        --date {{ date }} \
         --input "{{ paths_dir }}/{{ date }}/*.gz.v6.txt" \
+        --input "{{ paths_dir }}/{{ date }}/*.bz2.v6.txt" \
         --output {{ output_dir }}/{{ date }}/{{ output_v6 }}
+
+# Pack output products for a given date and publish to pubpoint
+pack-and-publish:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    archive="topology-{{ date }}.tar.bz2"
+    dest="{{ pubpoint }}/${archive}"
+    if [ -z "{{ date }}" ]; then
+        echo "Error: date is required. Usage: just date=YYYYMMDD pack-and-publish" >&2
+        exit 1
+    fi
+    if [ ! -d "{{ output_dir }}/{{ date }}" ]; then
+        echo "Error: output directory {{ output_dir }}/{{ date }} does not exist." >&2
+        exit 1
+    fi
+    echo "Packing {{ output_dir }}/{{ date }}/ → ${archive} ..."
+    sed "s/{date}/{{ date }}/g" DATA-README.md > "{{ output_dir }}/{{ date }}/README.md"
+    tar -cjf "${archive}" -C "{{ output_dir }}/{{ date }}" .
+    rm -f "{{ output_dir }}/{{ date }}/README.md"
+    echo "$(tar -tjf "${archive}" | wc -l) files packed."
+    if [ -e "${dest}" ]; then
+        read -r -p "  ${dest} already exists. Overwrite? [y/N] " confirm
+        if [[ ! "${confirm}" =~ ^[Yy]$ ]]; then
+            echo "Aborted."
+            rm -f "${archive}"
+            exit 1
+        fi
+    fi
+    sudo cp "${archive}" "${dest}"
+    rm -f "${archive}"
+    echo "Published → ${dest}"

@@ -161,8 +161,9 @@ uv run build-topology.py --input <glob> [--output <file>] [options]
 
 | Flag | Description |
 |---|---|
-| `--input` | Glob pattern matching AS path `.txt` files. **Required.** |
+| `--input` | Glob pattern matching AS path `.txt` files. **Required.** Repeat to include multiple patterns. |
 | `--output` | Output file for the edge list. Default: `./topology.txt` |
+| `--date` | Snapshot date in `YYYYMMDD` format. When set, the matching historical NRO stats file is used for filtering instead of the latest. |
 | `--filter-registered` | Drop any path containing an unregistered ASN (see below). Default: off. |
 | `--justify-output` | Zero-pad all ASNs to 8 digits in all output files. Default: off. |
 | `--no-paths` | Skip building the paths file (fastest mode for edge-list-only runs). Default: off. |
