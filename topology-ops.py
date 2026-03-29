@@ -1,11 +1,12 @@
 """
 topology-ops.py — Set operations on AS-level topology edge lists.
 
-Combines two topology files (as produced by build-topology.py) using either
-a union (add) or difference (sub) operation:
+Combines two or more topology files (as produced by build-topology.py) using
+either a union (add) or difference (sub) operation:
 
-  add  — output contains all edges present in either input (deduplicated)
-  sub  — output contains edges from input1 that are not present in input2
+  add  — output contains all edges present in any input (deduplicated union)
+  sub  — output contains edges from the first file that are absent from all
+         remaining files (first minus the union of the rest)
 
 Both plain and zero-padded ASN formats are handled transparently; comparison
 is always done numerically. Output format is controlled by --justify-output.
@@ -56,17 +57,14 @@ def read_edges(path: Path) -> set[tuple[int, int]]:
         Set of (a, b) tuples where a < b, both integers.
     """
     edges: set[tuple[int, int]] = set()
-    skipped = 0
     with path.open() as fh:
         for line in fh:
             tokens = line.split()
             if len(tokens) < 2:
-                skipped += 1
                 continue
             try:
                 a, b = int(tokens[0]), int(tokens[1])
             except ValueError:
-                skipped += 1
                 continue
             edges.add((a, b) if a < b else (b, a))
     return edges
@@ -80,17 +78,14 @@ def main(
         help="Operation to perform: 'add' (union) or 'sub' (difference).",
         case_sensitive=False,
     ),
-    input1: Path = typer.Option(
+    inputs: list[Path] = typer.Argument(
         ...,
-        "--input1",
-        help="First topology edge list file.",
-        metavar="FILE",
-    ),
-    input2: Path = typer.Option(
-        ...,
-        "--input2",
-        help="Second topology edge list file.",
-        metavar="FILE",
+        help=(
+            "Two or more topology edge list files. "
+            "For 'add': union of all files. "
+            "For 'sub': first file minus the union of the remaining files."
+        ),
+        metavar="FILE...",
     ),
     output: Path = typer.Option(
         ...,
@@ -107,31 +102,37 @@ def main(
         ),
     ),
 ) -> None:
-    """Perform set operations (add/sub) on two topology edge list files."""
+    """Perform set operations (add/sub) on two or more topology edge list files."""
     start = time.monotonic()
 
-    for path, flag in ((input1, "--input1"), (input2, "--input2")):
+    if len(inputs) < 2:
+        console.print("[red]Error:[/red] at least two input files are required.")
+        raise typer.Exit(1)
+
+    for path in inputs:
         if not path.exists():
-            console.print(f"[red]Error:[/red] {flag} file not found: {path}")
+            console.print(f"[red]Error:[/red] file not found: {path}")
             raise typer.Exit(1)
 
-    console.print(f"\n[bold]Operation:[/bold] {op.value}\n")
+    console.print(f"\n[bold]Operation:[/bold] {op.value} ({len(inputs)} files)\n")
 
-    console.print(f"  Reading [cyan]{input1}[/cyan] ...")
-    edges1 = read_edges(input1)
-    console.print(f"    {len(edges1):,} edges\n")
+    edge_sets: list[set[tuple[int, int]]] = []
+    for path in inputs:
+        console.print(f"  Reading [cyan]{path}[/cyan] ...")
+        edges = read_edges(path)
+        console.print(f"    {len(edges):,} edges")
+        edge_sets.append(edges)
+    console.print()
 
-    console.print(f"  Reading [cyan]{input2}[/cyan] ...")
-    edges2 = read_edges(input2)
-    console.print(f"    {len(edges2):,} edges\n")
-
-    # Apply operation
     if op == Op.add:
-        result = edges1 | edges2
+        result = edge_sets[0]
+        for es in edge_sets[1:]:
+            result = result | es
     else:
-        result = edges1 - edges2
-
-    removed = len(edges1) - len(result) if op == Op.sub else None
+        subtrahend: set[tuple[int, int]] = set()
+        for es in edge_sets[1:]:
+            subtrahend = subtrahend | es
+        result = edge_sets[0] - subtrahend
 
     # Write output
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -142,12 +143,13 @@ def main(
 
     elapsed = time.monotonic() - start
     console.print(f"\n[bold]Done.[/bold]")
-    console.print(f"  input1 edges : {len(edges1):,}")
-    console.print(f"  input2 edges : {len(edges2):,}")
+    for i, (path, es) in enumerate(zip(inputs, edge_sets)):
+        label = "base  " if (op == Op.sub and i == 0) else f"input{i + 1}"
+        console.print(f"  {label} ({path.name}): {len(es):,} edges")
     if op == Op.sub:
-        console.print(f"  removed      : {removed:,}")
-    console.print(f"  output edges : {len(result):,}")
-    console.print(f"  elapsed      : {elapsed:.1f}s")
+        console.print(f"  removed : {len(edge_sets[0]) - len(result):,}")
+    console.print(f"  output  : {len(result):,} edges")
+    console.print(f"  elapsed : {elapsed:.1f}s")
 
 
 if __name__ == "__main__":

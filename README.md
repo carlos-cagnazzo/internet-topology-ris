@@ -284,38 +284,38 @@ uv run build-topology.py \
 
 ### Topology Set Operations: `topology-ops.py`
 
-Combines two topology edge list files using set operations.
+Combines two or more topology edge list files using set operations.
 
 ```
-uv run topology-ops.py --op <add|sub> --input1 <file> --input2 <file> --output <file> [--justify-output]
+uv run topology-ops.py --op <add|sub> --output <file> [--justify-output] FILE [FILE ...]
 ```
 
-| Flag | Description |
+| Argument / Flag | Description |
 |---|---|
+| `FILE ...` | Two or more topology edge list files. **Required.** |
 | `--op` | Operation: `add` (union) or `sub` (difference). **Required.** |
-| `--input1` | First topology edge list. **Required.** |
-| `--input2` | Second topology edge list. **Required.** |
 | `--output` | Output edge list file. **Required.** |
 | `--justify-output` | Zero-pad all ASNs to 8 digits in the output. Default: off. |
 
 Both plain (`6 22773`) and zero-padded (`00000006 00022773`) input formats are handled transparently — comparison is always numeric.
 
-- **add**: union of both edge sets (all edges present in either file, deduplicated)
-- **sub**: edges from `--input1` that do not appear in `--input2`
+- **add**: union of all input files (all edges present in any file, deduplicated)
+- **sub**: edges from the first file that do not appear in any of the remaining files
 
 **Examples:**
 ```bash
-# Merge two dates into a single combined topology
+# Merge three dates into a single combined topology
 uv run topology-ops.py --op add \
-  --input1 output/20230801/topology.txt \
-  --input2 output/20251201/topology.txt \
-  --output output/combined.txt --justify-output
+  --output output/combined.txt --justify-output \
+  output/20230801/topology.txt \
+  output/20251201/topology.txt \
+  output/20260101/topology.txt
 
 # Find edges present in 2023 but gone by 2025
 uv run topology-ops.py --op sub \
-  --input1 output/20230801/topology.txt \
-  --input2 output/20251201/topology.txt \
-  --output output/disappeared.txt
+  --output output/disappeared.txt \
+  output/20230801/topology.txt \
+  output/20251201/topology.txt
 ```
 
 ---
