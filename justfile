@@ -36,12 +36,19 @@ default:
     @just --list
 
 # Run the full pipeline: download → process → topology
-pipeline: (download) (process) (topology)
+pipeline: (download) (download-routeviews) (process) (topology)
 
-# Step 1 — Download bview RIB snapshots from RIS collectors
+# Step 1a — Download bview RIB snapshots from RIS collectors
 download:
     uv run get-mrt.py \
         --collectors {{ collectors }} \
+        --date {{ date }} \
+        --output-dir {{ mrt_dir }}/{{ date }}
+
+# Step 1b — Download RIB snapshots from RouteViews collectors
+download-routeviews:
+    uv run get-routeviews.py \
+        --collectors route-views.amsix,ix-br2.gru,route-views2,route-views.sg \
         --date {{ date }} \
         --output-dir {{ mrt_dir }}/{{ date }}
 

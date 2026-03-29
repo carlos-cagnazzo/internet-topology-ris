@@ -104,11 +104,13 @@ Known collectors:
 |---|---|
 | `route-views.amsix` | AMS-IX, Amsterdam |
 | `ix-br2.gru` | São Paulo, Brazil |
+| `route-views2` | Oregon, US |
+| `route-views.sg` | Singapore |
 
 **Example:**
 ```bash
 uv run get-routeviews.py \
-  --collectors route-views.amsix,ix-br2.gru \
+  --collectors route-views.amsix,ix-br2.gru,route-views2,route-views.sg \
   --date 20251201 \
   --output-dir ./mrt/20251201
 ```
