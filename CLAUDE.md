@@ -19,6 +19,7 @@ just date=20240101 collectors=rrc00-rrc05,rrc11 pipeline
 # Run individual steps
 just date=20240101 collectors=rrc00-rrc25 download
 just date=20240101 download-routeviews
+just date=20240101 collectors=rrc00-rrc25 ris-day   # bview + updates, replaces download+process for RIS
 just date=20240101 process
 just date=20240101 topology          # combined + v4 + v6
 just date=20240101 topology-combined
@@ -61,6 +62,8 @@ Three scripts forming a linear pipeline, orchestrated via `justfile`:
 1. **`get-mrt.py`** — Downloads the 00:00 UTC RIB snapshot (`bview`) for a given date from one or more RIS collectors. Flags: `--collectors` (required), `--date` (required, YYYYMMDD), `--output-dir` (default `./mrt`). Skips already-downloaded files; failed transfers are counted and reported but do not abort the run. Output filenames include the collector name: `bview.rrcXX.YYYYMMDD.0000.gz`. The justfile passes `./mrt/<date>` as `--output-dir` to keep runs isolated by date. Invoked as the `download` recipe.
 
    **`get-routeviews.py`** — same interface as `get-mrt.py` but targets the RouteViews archive. Invoked as the `download-routeviews` recipe with a fixed collector list: `route-views.amsix`, `ix-br2.gru`, `route-views2`, `route-views.sg`. No range notation (collectors don't follow a numeric sequence). Output filenames: `rib.<collector>.<date>.0000.bz2`. URL pattern: `https://archive.routeviews.org/<collector>/bgpdata/YYYY.MM/RIBS/rib.YYYYMMDD.0000.bz2`. Both `download` and `download-routeviews` are dependencies of `pipeline`.
+
+   **`get-ris-day.py`** — alternative to `get-mrt.py` + `process-mrt.py` for RIS collectors. Downloads the bview AND all 288 five-minute update files for the given date, extracts paths from both (bview: `field[1]=='R'`; updates: `field[1]=='A'`, withdrawals ignored), and writes one combined path file per collector. Output filename: `bview.<collector>.<date>.full.gz.txt` — distinct from `process-mrt.py` output so both can coexist. `--keep` preserves update files on disk (bview always kept). `--concurrency` caps parallel update downloads (default 20). Invoked via the `ris-day` justfile recipe. bgpreader option for update files: `upd-file=<path>` (vs `rib-file=<path>` for bview).
 
    `--collectors` accepts a comma-separated mix of individual names and ranges: `rrc00`, `rrc00,rrc04,rrc11`, `rrc00-rrc10`, `rrc00-rrc05,rrc11,rrc23`.
 
