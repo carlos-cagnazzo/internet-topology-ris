@@ -14,6 +14,7 @@ both if present.
 """
 
 import asyncio
+import gzip
 import re
 import subprocess
 import time
@@ -41,6 +42,7 @@ console = Console()
 RIS_BASE = "https://data.ris.ripe.net"
 RANGE_RE = re.compile(r"^rrc(\d+)-rrc(\d+)$")
 AS_PATH_FIELD = 11
+PREFIX_FIELD = 9
 ELEM_TYPE_FIELD = 1
 DEFAULT_CONCURRENCY = 20
 
@@ -249,20 +251,24 @@ def download_updates(
 # ---------------------------------------------------------------------------
 
 
-def process_bgpreader(path: Path, out_fh, elem_type: str) -> int:
-    """Run bgpreader on *path* and write cleaned AS paths to *out_fh*.
+def process_bgpreader(
+    path: Path, out_fh, v4_fh, v6_fh, elem_type: str
+) -> tuple[int, int, int]:
+    """Run bgpreader on *path* and write cleaned AS paths to three output file handles.
 
     Args:
         path:      MRT file to process (bview or update).
-        out_fh:    Open file handle to write paths to.
+        out_fh:    Open file handle for combined output.
+        v4_fh:     Open file handle for IPv4-only output.
+        v6_fh:     Open file handle for IPv6-only output.
         elem_type: bgpreader element type to keep: 'R' for bview, 'A' for updates.
 
     Returns:
-        Number of paths written.
+        Tuple of (total_written, v4_written, v6_written).
     """
     opt_key = "rib-file" if elem_type == "R" else "upd-file"
     cmd = ["bgpreader", "-d", "singlefile", "-o", f"{opt_key}={path}"]
-    total = 0
+    total = v4 = v6 = 0
     with subprocess.Popen(
         cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True
     ) as proc:
@@ -278,9 +284,17 @@ def process_bgpreader(path: Path, out_fh, elem_type: str) -> int:
             tokens = clean_path(raw)
             if len(tokens) < 2:
                 continue
-            out_fh.write(" ".join(tokens) + "\n")
+            path_line = " ".join(tokens) + "\n"
+            out_fh.write(path_line)
             total += 1
-    return total
+            prefix = fields[PREFIX_FIELD] if len(fields) > PREFIX_FIELD else ""
+            if ":" in prefix:
+                v6_fh.write(path_line)
+                v6 += 1
+            else:
+                v4_fh.write(path_line)
+                v4 += 1
+    return total, v4, v6
 
 
 # ---------------------------------------------------------------------------
@@ -364,7 +378,9 @@ def main(
         console.print(f"[{idx}/{n}] [bold]{collector}[/bold]")
 
         out_path = day_out / f"bview.{collector}.{date}.full.gz.txt"
-        if out_path.exists():
+        v4_path = day_out / f"bview.{collector}.{date}.full.gz.v4.txt"
+        v6_path = day_out / f"bview.{collector}.{date}.full.gz.v6.txt"
+        if out_path.exists() and v4_path.exists() and v6_path.exists():
             console.print(f"  [dim]skip[/dim]  {out_path.name} (already exists)\n")
             collectors_done += 1
             continue
@@ -397,12 +413,19 @@ def main(
         console.print(f"  [bold]processing[/bold] → [green]{out_path.name}[/green]")
         collector_paths = 0
 
-        with out_path.open("w") as out_fh:
-            n_bview = process_bgpreader(bv_dest, out_fh, "R")
+        with (
+            gzip.open(out_path, "wt", compresslevel=1) as out_fh,
+            gzip.open(v4_path, "wt", compresslevel=1) as v4_fh,
+            gzip.open(v6_path, "wt", compresslevel=1) as v6_fh,
+        ):
+            n_bview, n_bview_v4, n_bview_v6 = process_bgpreader(bv_dest, out_fh, v4_fh, v6_fh, "R")
             collector_paths += n_bview
-            console.print(f"    bview   : {n_bview:,} paths")
+            console.print(
+                f"    bview   : {n_bview:,} paths "
+                f"([cyan]{n_bview_v4:,}[/cyan] v4, [magenta]{n_bview_v6:,}[/magenta] v6)"
+            )
 
-            n_upd = 0
+            n_upd = n_upd_v4 = n_upd_v6 = 0
             progress = Progress(
                 SpinnerColumn(),
                 TextColumn("[progress.description]{task.description}"),
@@ -415,11 +438,17 @@ def main(
             with progress:
                 task = progress.add_task("    updates ", total=len(upd_paths))
                 for upd_path in upd_paths:
-                    n_upd += process_bgpreader(upd_path, out_fh, "A")
+                    t, t_v4, t_v6 = process_bgpreader(upd_path, out_fh, v4_fh, v6_fh, "A")
+                    n_upd += t
+                    n_upd_v4 += t_v4
+                    n_upd_v6 += t_v6
                     progress.advance(task)
 
         collector_paths += n_upd
-        console.print(f"    updates : {n_upd:,} paths")
+        console.print(
+            f"    updates : {n_upd:,} paths "
+            f"([cyan]{n_upd_v4:,}[/cyan] v4, [magenta]{n_upd_v6:,}[/magenta] v6)"
+        )
         console.print(f"    total   : {collector_paths:,} paths written")
         grand_total_paths += collector_paths
         collectors_done += 1

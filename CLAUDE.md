@@ -63,7 +63,12 @@ Three scripts forming a linear pipeline, orchestrated via `justfile`:
 
    **`get-routeviews.py`** — same interface as `get-mrt.py` but targets the RouteViews archive. Invoked as the `download-routeviews` recipe with a fixed collector list: `route-views.amsix`, `ix-br2.gru`, `route-views2`, `route-views.sg`. No range notation (collectors don't follow a numeric sequence). Output filenames: `rib.<collector>.<date>.0000.bz2`. URL pattern: `https://archive.routeviews.org/<collector>/bgpdata/YYYY.MM/RIBS/rib.YYYYMMDD.0000.bz2`. Both `download` and `download-routeviews` are dependencies of `pipeline`.
 
-   **`get-ris-day.py`** — alternative to `get-mrt.py` + `process-mrt.py` for RIS collectors. Downloads the bview AND all 288 five-minute update files for the given date, extracts paths from both (bview: `field[1]=='R'`; updates: `field[1]=='A'`, withdrawals ignored), and writes one combined path file per collector. Output filename: `bview.<collector>.<date>.full.gz.txt` — distinct from `process-mrt.py` output so both can coexist. `--keep` preserves update files on disk (bview always kept). `--concurrency` caps parallel update downloads (default 20). Invoked via the `ris-day` justfile recipe. bgpreader option for update files: `upd-file=<path>` (vs `rib-file=<path>` for bview).
+   **`get-ris-day.py`** — alternative to `get-mrt.py` + `process-mrt.py` for RIS collectors. Downloads the bview AND all 288 five-minute update files for the given date, extracts paths from both (bview: `field[1]=='R'`; updates: `field[1]=='A'`, withdrawals ignored), and writes three compressed path files per collector (mirroring `process-mrt.py`):
+   - `bview.<collector>.<date>.full.gz.txt` — combined paths
+   - `bview.<collector>.<date>.full.gz.v4.txt` — IPv4-only paths
+   - `bview.<collector>.<date>.full.gz.v6.txt` — IPv6-only paths
+
+   Address family is detected from bgpreader column 9 (prefix) exactly as in `process-mrt.py`. A collector is skipped only if all three output files already exist. `--keep` preserves update files on disk (bview always kept). `--concurrency` caps parallel update downloads (default 20). Invoked via the `ris-day` justfile recipe. bgpreader option for update files: `upd-file=<path>` (vs `rib-file=<path>` for bview).
 
    `--collectors` accepts a comma-separated mix of individual names and ranges: `rrc00`, `rrc00,rrc04,rrc11`, `rrc00-rrc10`, `rrc00-rrc05,rrc11,rrc23`.
 
@@ -93,6 +98,7 @@ Three scripts forming a linear pipeline, orchestrated via `justfile`:
 ## Conventions
 
 - All scripts: measure and display total execution time on exit; show progress when processing multiple files; include inline docstrings and rich `--help` output.
+- **Path files are gzip-compressed** (`compresslevel=1`). Both `process-mrt.py` and `get-ris-day.py` write compressed output despite the `.txt` extension. `build-topology.py` detects compression via the `\x1f\x8b` magic bytes and opens files with `gzip.open()` transparently — plain text files are also still accepted.
 - `--collectors` is mandatory with no default.
 - AS path processing rules (applied in `process-mrt.py`):
   - Collapse consecutive duplicate ASNs before extracting edges (remove prepending): `A A B C` → `A B C`.

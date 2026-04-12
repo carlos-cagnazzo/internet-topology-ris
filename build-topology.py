@@ -30,6 +30,7 @@ Performance features:
   - --no-paths skips the paths sort/merge step entirely for faster runs.
 """
 
+import gzip
 import heapq
 import os
 import pickle
@@ -124,6 +125,26 @@ def _worker_init(
 # ---------------------------------------------------------------------------
 # Formatting helpers
 # ---------------------------------------------------------------------------
+
+
+def open_path_file(path: Path):
+    """Open a path file for reading, handling both plain text and gzip-compressed formats.
+
+    Detects gzip by checking the two-byte magic number at the start of the
+    file. Returns a text-mode file handle in either case, so callers need no
+    special handling.
+
+    Args:
+        path: Path to a plain or gzip-compressed AS path file.
+
+    Returns:
+        An open text-mode file handle.
+    """
+    with path.open("rb") as fh:
+        magic = fh.read(2)
+    if magic == b"\x1f\x8b":
+        return gzip.open(path, "rt")
+    return path.open("r")
 
 
 def path_sort_key(line: str) -> tuple:
@@ -403,7 +424,7 @@ def _process_file(txt_path_str: str) -> dict:
         tmp_fh = tf
 
     try:
-        with txt_path.open() as fh:
+        with open_path_file(txt_path) as fh:
             for line in fh:
                 tokens = line.split()
                 if len(tokens) < 2:
@@ -592,8 +613,8 @@ def main(
 
     matches = sorted({f for pattern in input_files for f in glob(pattern)})
     if not matches:
-        console.print(f"[red]Error:[/red] No files matched: {', '.join(input_files)}")
-        raise typer.Exit(1)
+        console.print(f"[dim]No files matched: {', '.join(input_files)} — skipping.[/dim]")
+        raise typer.Exit(0)
 
     total_files = len(matches)
     n_workers = (workers if workers > 0 else (os.cpu_count() or 4))

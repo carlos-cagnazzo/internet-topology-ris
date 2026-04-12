@@ -20,6 +20,7 @@
 #   just date=20240101 collectors=rrc00-rrc25 download
 #   just date=20240101 process
 #   just date=20240101 topology
+#   just date=20240101 full-day
 
 collectors := "rrc00"
 date       := ""
@@ -51,6 +52,23 @@ download-routeviews:
         --collectors route-views.amsix,ix-br2.gru,route-views2,route-views.sg \
         --date {{ date }} \
         --output-dir {{ mrt_dir }}/{{ date }}
+
+# Full-day pipeline: ris-day per collector (sequential, to bound disk usage) → routeviews → process → topology
+full-day:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -z "{{ date }}" ]; then
+        echo "Error: date is required. Usage: just date=YYYYMMDD full-day" >&2
+        exit 1
+    fi
+    for C in rrc00 rrc01 rrc02 rrc03 rrc04 rrc05 rrc06 rrc07 rrc10 rrc11 \
+              rrc12 rrc13 rrc14 rrc15 rrc16 rrc18 rrc19 rrc20 rrc21 rrc22 \
+              rrc23 rrc24 rrc25; do
+        just date={{ date }} collectors=$C ris-day
+    done
+    just date={{ date }} download-routeviews
+    just date={{ date }} process
+    just date={{ date }} topology
 
 # Step 1c — Download and process a full day of RIS data (bview + all updates) per collector
 ris-day:

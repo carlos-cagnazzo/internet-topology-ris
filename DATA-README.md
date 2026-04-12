@@ -39,5 +39,5 @@ ASN list files contain one ASN per line. Path files contain one AS path per line
 
 ## Data sources
 
-- **RIPE RIS** collectors `rrc00`–`rrc25`, 00:00 UTC RIB snapshots
-- **RouteViews** collectors `route-views.amsix` (AMS-IX) and `ix-br2.gru` (São Paulo)
+- **RIPE RIS** collectors `rrc00`–`rrc25`, full-day coverage: 00:00 UTC RIB snapshot plus all 288 five-minute update files. IPv4/IPv6 split is derived from the prefix announced in each BGP update.
+- **RouteViews** collectors `route-views.amsix` (AMS-IX), `ix-br2.gru` (São Paulo), `route-views2`, and `route-views.sg`, 00:00 UTC RIB snapshots only. IPv4/IPv6 split is derived from the prefix field of each RIB entry.

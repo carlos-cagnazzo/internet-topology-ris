@@ -16,6 +16,7 @@ AS path cleaning applied before writing:
     edges before it are kept, the set and everything after are discarded.
 """
 
+import gzip
 import subprocess
 import time
 from glob import glob
@@ -85,7 +86,9 @@ def process_file(
 
     total = v4 = v6 = 0
     with subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True) as proc:
-        with txt_path.open("w") as out_all, v4_path.open("w") as out_v4, v6_path.open("w") as out_v6:
+        with (gzip.open(txt_path, "wt", compresslevel=1) as out_all,
+              gzip.open(v4_path, "wt", compresslevel=1) as out_v4,
+              gzip.open(v6_path, "wt", compresslevel=1) as out_v6):
             for line in proc.stdout:
                 fields = line.rstrip("\n").split("|")
                 if len(fields) <= AS_PATH_FIELD:
