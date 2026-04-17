@@ -133,6 +133,16 @@ API endpoints used (all under `https://stat.ripe.net/data/`):
 - `announced-prefixes` → `prefixes` list (len = prefix count)
 - `routing-status` → `last_seen.time` (ISO string)
 
+## Graph Analysis Tools (`graph-analysis/`)
+
+A separate directory of tools for analysing topology files as graphs. All run via `uv run graph-analysis/<tool>` from the repo root. See `graph-analysis/README.md` for full usage and examples.
+
+**`graph-analysis/topo-to-nx.py`** — Converts a topology edge list to a NetworkX GML file (undirected graph). Zero-padded ASNs are normalised to plain integers. Each node carries `asn` (int) and `label` (plain ASN string) attributes; edges carry no attributes. Flags: `--input` (required), `--output` (default: input stem + `.gml`). Prints a running edge count every 100k lines.
+
+**`graph-analysis/hubs.py`** — Lists ASNs with degree >= `--min-degree` from a GML file. Without `--wide`: one ASN per line, sorted numerically. With `--wide`: two columns (`ASN degree`), sorted by degree descending. Flags: `--input` (required), `--output` (default: input stem + `-hubs.txt`), `--min-degree` (required), `--wide`.
+
+**`graph-analysis/core.py`** — Filters a topology edge list to edges where **both** endpoints have degree >= `--min-degree`. Output is a valid topology file (same two-column format, `ASN1 < ASN2`, sorted by ASN1). Degree is computed from the input file directly — no GML needed. Flags: `--input` (required), `--output` (default: input stem + `-core.txt`), `--min-degree` (required), `--wide` (adds `DEG1 DEG2` columns), `--justify-output` (zero-pad ASNs to 8 digits).
+
 ## RIS Data
 
 - Collectors: `rrc00` through `rrc25`
