@@ -124,6 +124,8 @@ Three scripts forming a linear pipeline, orchestrated via `justfile`:
 
 Flags: `--input` (required), `--output` (default: input stem + `.gml`), `--enrich/--no-enrich`, `--min-degree` (default 3), `--concurrency` (default 10), `--cache` (cache file path).
 
+**`fetch-results.sh`** — Fetches output files from multiple remote machines running the pipeline in parallel. Rsyncs into `./fetch/<hostname>/` subdirs to avoid conflicts. Configure `SOURCES` (rsync URLs), `INCLUDES` (array of glob patterns), and `EXCLUDE` at the top. Uses `--include="*/"` to recurse into date subdirs, then applies include/exclude filters. Continues on per-host failure and reports all failed hosts at the end. Topology files are gzip-compressed; count unique ASNs across fetched files with: `zcat fetch/*/topology-????????.txt | awk '{print $1; print $2}' | sort -un | wc -l`
+
 **`lookup-as.py`** — Queries the RIPEstat Data API for one or more ASNs. Returns AS holder name, announced prefix count, last-seen timestamp, and announced status. Three input modes: `--asn <N>` (single), `--file <path>` (batch), `--file -` or implicit stdin (pipe). Batch requests run concurrently via `asyncio` + `httpx.AsyncClient`, bounded by `--concurrency` (default 10). A live progress bar is shown for batch mode. `--output` writes a TSV sidecar alongside the terminal table.
 
 API endpoints used (all under `https://stat.ripe.net/data/`):

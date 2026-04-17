@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-D="20250415"
+D="20250421"
 
 # Run ris-day one collector at a time so update files are downloaded,
 # processed, and deleted before the next collector starts.
