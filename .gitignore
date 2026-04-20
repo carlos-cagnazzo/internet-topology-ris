@@ -13,3 +13,6 @@ wheels/
 *paths/*
 topology*.txt
 nro-delegated-stats
+fetch
+eda/.ipynb_checkpoints
+.ipynb_checkpoints
