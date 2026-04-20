@@ -137,6 +137,8 @@ A separate directory of tools for analysing topology files as graphs. All run vi
 
 **`graph-analysis/hubs.py`** — Lists ASNs with degree >= `--min-degree` from a GML file. Without `--wide`: one ASN per line, sorted numerically. With `--wide`: two columns (`ASN degree`), sorted by degree descending. Flags: `--input` (required), `--output` (default: input stem + `-hubs.txt`), `--min-degree` (required), `--wide`.
 
+**`graph-analysis/nx-to-topo.py`** — Inverse of `topo-to-nx.py`. Reads a GML file and writes a two-column topology edge list (`ASN1 ASN2` per line, `ASN1 < ASN2`, sorted by ASN1). ASNs are always read from the node `asn` attribute (safe for enriched GML files). Optional `--min-degree N` filters to edges where both endpoints have degree ≥ N. `--justify-output` zero-pads ASNs to 8 digits.
+
 **`graph-analysis/core.py`** — Filters a topology edge list to edges where **both** endpoints have degree >= `--min-degree`. Output is a valid topology file (same two-column format, `ASN1 < ASN2`, sorted by ASN1). Degree is computed from the input file directly — no GML needed. Flags: `--input` (required), `--output` (default: input stem + `-core.txt`), `--min-degree` (required), `--wide` (adds `DEG1 DEG2` columns), `--justify-output` (zero-pad ASNs to 8 digits).
 
 ## RIS Data

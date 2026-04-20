@@ -114,6 +114,41 @@ uv run graph-analysis/core.py \
 
 ---
 
+### `nx-to-topo.py` — GML to topology edge list
+
+The inverse of `topo-to-nx.py`. Reads a GML file and writes a two-column
+topology file (`ASN1 ASN2` per line, `ASN1 < ASN2`, sorted numerically by ASN1).
+ASNs are always taken from the node `asn` attribute, so enriched GML files
+(where node keys may be holder name strings) are handled correctly.
+Exits with an error if the input is not a valid GML file.
+
+```
+uv run graph-analysis/nx-to-topo.py --input <topology.gml> [OPTIONS]
+```
+
+| Flag | Default | Description |
+|---|---|---|
+| `--input` / `-i` | required | GML file |
+| `--output` / `-o` | input stem + `.txt` | Output topology file |
+| `--min-degree` / `-d` | off | Only include edges where both endpoints have degree ≥ N |
+| `--justify-output` | off | Zero-pad ASNs to 8 digits |
+
+**Examples:**
+
+```bash
+# Basic round-trip back to topology format
+uv run graph-analysis/nx-to-topo.py \
+    --input output/20240101/topology.gml
+
+# Export only the dense core with zero-padded ASNs
+uv run graph-analysis/nx-to-topo.py \
+    --input output/20240101/topology.gml \
+    --min-degree 100 \
+    --justify-output
+```
+
+---
+
 ## Historic
 
 **`topology-to-gml.py`** — An earlier standalone script at the repository root that converted a topology edge list to GML with optional RIPEstat enrichment. Its functionality has been fully merged into `graph-analysis/topo-to-nx.py` (which adds gzip support, progress reporting, and integer `asn` node attributes). The original script was removed in the `v0.2.0` → `v0.3.0` development cycle.
