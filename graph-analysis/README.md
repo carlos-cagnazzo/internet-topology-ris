@@ -149,6 +149,50 @@ uv run graph-analysis/nx-to-topo.py \
 
 ---
 
+### `geo-filter.py` — Filter topology by country
+
+Filters a topology to edges where **both** ASNs are assigned to one of the
+given ISO 3166-1 alpha-2 country codes, according to the NRO delegated stats.
+ASNs not found in the NRO file are excluded. Always produces two output files:
+a `.txt` topology edge list and a `.gml` graph (nodes carry a `country`
+attribute in addition to `asn` and `label`).
+
+Accepts either a `.txt`/`.txt.gz` topology file or a `.gml` file as input.
+The NRO stats file is fetched automatically and cached next to the input file.
+With `--date`, the historical snapshot for that date is used (cached
+permanently). Without `--date`, the latest file is used (re-fetched if older
+than 24 hours).
+
+```
+uv run graph-analysis/geo-filter.py --input <file> --countries <CC,...> [OPTIONS]
+```
+
+| Flag | Default | Description |
+|---|---|---|
+| `--input` / `-i` | required | Topology `.txt`/`.txt.gz` or `.gml` file |
+| `--countries` / `-c` | required | Comma-separated ISO 3166-1 alpha-2 codes (e.g. `BR,AR,CL`) |
+| `--output` / `-o` | input stem + `-geo` | Output base path (without extension); `.txt` and `.gml` are always written |
+| `--date` | latest | NRO stats snapshot date `YYYYMMDD` |
+| `--justify-output` | off | Zero-pad ASNs to 8 digits in `.txt` output |
+
+**Examples:**
+
+```bash
+# Filter to LATAM Southern Cone countries
+uv run graph-analysis/geo-filter.py \
+    --input output/20240101/topology.txt \
+    --countries BR,AR,CL,UY
+
+# Historical NRO snapshot, GML input, justified output
+uv run graph-analysis/geo-filter.py \
+    --input output/20240101/topology.gml \
+    --countries BR \
+    --date 20240101 \
+    --justify-output
+```
+
+---
+
 ## Historic
 
 **`topology-to-gml.py`** — An earlier standalone script at the repository root that converted a topology edge list to GML with optional RIPEstat enrichment. Its functionality has been fully merged into `graph-analysis/topo-to-nx.py` (which adds gzip support, progress reporting, and integer `asn` node attributes). The original script was removed in the `v0.2.0` → `v0.3.0` development cycle.
