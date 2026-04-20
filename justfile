@@ -120,6 +120,10 @@ topology-v6:
         --input "{{ paths_dir }}/{{ date }}/*.bz2.v6.txt" \
         --output {{ output_dir }}/{{ date }}/{{ output_v6 }}
 
+# Start JupyterLab bound to the Tailscale interface
+lab:
+    uv run jupyter lab --ip 100.115.131.82 --no-browser --notebook-dir ./ --IdentityProvider.token='cocoliso123'
+
 # Pack output products for a given date and publish to pubpoint
 pack-and-publish:
     #!/usr/bin/env bash
