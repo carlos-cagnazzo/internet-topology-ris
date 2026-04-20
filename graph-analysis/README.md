@@ -12,23 +12,33 @@ Input topology files use the two-column `ASN1 ASN2` format produced by `build-to
 
 Imports a topology edge list into an undirected [NetworkX](https://networkx.org/) graph and writes it as a GML file for use with Gephi, yEd, Cytoscape, or other graph tools.
 
-Zero-padded ASNs are normalised to plain integers. Each node carries an `asn` (integer) and a `label` (plain ASN string) attribute. Edges carry no attributes.
+Zero-padded ASNs are normalised to plain integers. Each node carries an `asn` (integer) and a `label` (plain ASN string) attribute. Edges carry no attributes. With `--enrich`, nodes with degree >= `--min-degree` have their label replaced with the AS holder name from RIPEstat; names are cached at `~/.cache/internet-topology-ris/as-names.json` with a 60-day TTL.
 
 ```
-uv run graph-analysis/topo-to-nx.py --input <topology.txt> [--output <out.gml>]
+uv run graph-analysis/topo-to-nx.py --input <topology.txt> [OPTIONS]
 ```
 
 | Flag | Default | Description |
 |---|---|---|
 | `--input` / `-i` | required | Topology edge list (`.txt` or `.txt.gz`) |
 | `--output` / `-o` | input stem + `.gml` | GML output path |
+| `--enrich/--no-enrich` | off | Fetch AS holder names from RIPEstat |
+| `--min-degree` | 3 | With `--enrich`: degree threshold for name lookup |
+| `--concurrency` | 10 | Max parallel RIPEstat requests |
+| `--cache` | `~/.cache/…/as-names.json` | AS name cache path |
 
-**Example:**
+**Examples:**
 
 ```bash
+# Basic conversion
 uv run graph-analysis/topo-to-nx.py \
     --input output/20240101/topology.txt \
     --output output/20240101/topology.gml
+
+# With AS holder name enrichment for high-degree nodes
+uv run graph-analysis/topo-to-nx.py \
+    --input output/20240101/topology.txt \
+    --enrich --min-degree 100
 ```
 
 ---
@@ -101,6 +111,12 @@ uv run graph-analysis/core.py \
     --wide \
     --justify-output
 ```
+
+---
+
+## Historic
+
+**`topology-to-gml.py`** — An earlier standalone script at the repository root that converted a topology edge list to GML with optional RIPEstat enrichment. Its functionality has been fully merged into `graph-analysis/topo-to-nx.py` (which adds gzip support, progress reporting, and integer `asn` node attributes). The original script was removed in the `v0.2.0` → `v0.3.0` development cycle.
 
 ---
 

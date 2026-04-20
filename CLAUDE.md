@@ -120,10 +120,6 @@ Three scripts forming a linear pipeline, orchestrated via `justfile`:
 
 **`topology-ops.py`** — Set operations on two or more topology edge list files. Input files are positional arguments (minimum 2). `--op add` produces the union of all inputs; `--op sub` produces edges in the first file not present in any of the remaining files. Both plain and zero-padded ASN formats handled transparently (comparison is always numeric). `--justify-output` follows the same convention as other tools.
 
-**`topology-to-gml.py`** — Converts a topology edge list to a GML file for import into Gephi, yEd, Cytoscape, etc. Reads the `AS1 AS2` edge list format (zero-padded or plain). Each node carries an `asn` attribute. With `--enrich`, nodes with degree ≥ `--min-degree` (default 3) are relabeled with their AS holder name from RIPEstat; the node key becomes the display label in GML. Holder names are cached at `~/.cache/internet-topology-ris/as-names.json` with a 60-day TTL to avoid redundant API calls.
-
-Flags: `--input` (required), `--output` (default: input stem + `.gml`), `--enrich/--no-enrich`, `--min-degree` (default 3), `--concurrency` (default 10), `--cache` (cache file path).
-
 **`fetch-results.sh`** — Fetches output files from multiple remote machines running the pipeline in parallel. Rsyncs into `./fetch/<hostname>/` subdirs to avoid conflicts. Configure `SOURCES` (rsync URLs), `INCLUDES` (array of glob patterns), and `EXCLUDE` at the top. Uses `--include="*/"` to recurse into date subdirs, then applies include/exclude filters. Continues on per-host failure and reports all failed hosts at the end. Topology files are gzip-compressed; count unique ASNs across fetched files with: `zcat fetch/*/topology-????????.txt | awk '{print $1; print $2}' | sort -un | wc -l`
 
 **`lookup-as.py`** — Queries the RIPEstat Data API for one or more ASNs. Returns AS holder name, announced prefix count, last-seen timestamp, and announced status. Three input modes: `--asn <N>` (single), `--file <path>` (batch), `--file -` or implicit stdin (pipe). Batch requests run concurrently via `asyncio` + `httpx.AsyncClient`, bounded by `--concurrency` (default 10). A live progress bar is shown for batch mode. `--output` writes a TSV sidecar alongside the terminal table.
@@ -137,7 +133,7 @@ API endpoints used (all under `https://stat.ripe.net/data/`):
 
 A separate directory of tools for analysing topology files as graphs. All run via `uv run graph-analysis/<tool>` from the repo root. See `graph-analysis/README.md` for full usage and examples.
 
-**`graph-analysis/topo-to-nx.py`** — Converts a topology edge list to a NetworkX GML file (undirected graph). Zero-padded ASNs are normalised to plain integers. Each node carries `asn` (int) and `label` (plain ASN string) attributes; edges carry no attributes. Flags: `--input` (required), `--output` (default: input stem + `.gml`). Prints a running edge count every 100k lines.
+**`graph-analysis/topo-to-nx.py`** — Converts a topology edge list to a NetworkX GML file (undirected graph). Plain and gzip-compressed inputs accepted. Zero-padded ASNs are normalised to plain integers. Each node carries `asn` (int) and `label` (plain ASN string) attributes; edges carry no attributes. With `--enrich`, nodes with degree ≥ `--min-degree` (default 3) receive their AS holder name from RIPEstat as label; names cached at `~/.cache/internet-topology-ris/as-names.json` (60-day TTL). Flags: `--input` (required), `--output` (default: input stem + `.gml`), `--enrich/--no-enrich`, `--min-degree`, `--concurrency` (default 10), `--cache`.
 
 **`graph-analysis/hubs.py`** — Lists ASNs with degree >= `--min-degree` from a GML file. Without `--wide`: one ASN per line, sorted numerically. With `--wide`: two columns (`ASN degree`), sorted by degree descending. Flags: `--input` (required), `--output` (default: input stem + `-hubs.txt`), `--min-degree` (required), `--wide`.
 

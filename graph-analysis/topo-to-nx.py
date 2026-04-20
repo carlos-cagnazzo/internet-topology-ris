@@ -3,27 +3,126 @@ topo-to-nx.py — Import an AS-level topology edge list into a NetworkX GML file
 
 Reads a two-column topology file (AS1 AS2 per line, space-separated) as
 produced by build-topology.py and writes an undirected NetworkX graph in GML
-format. Zero-padded ASNs are normalised to plain integers. Each node carries
-an 'asn' integer attribute and a 'label' string attribute (plain ASN, no
-padding).
+format. Plain and gzip-compressed inputs are accepted transparently.
+
+Zero-padded ASNs are normalised to plain integers. Each node carries an 'asn'
+(int) and a 'label' (plain ASN string) attribute. With --enrich, nodes with
+degree >= --min-degree have their label replaced with the AS holder name from
+RIPEstat; names are cached locally for 60 days.
 """
 
+import asyncio
 import gzip
+import json
 import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+import httpx
 import networkx as nx
 import typer
 from rich.console import Console
+from rich.progress import BarColumn, MofNCompleteColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 
 app = typer.Typer(help=__doc__)
 console = Console()
 
+RIPESTAT_BASE = "https://stat.ripe.net/data"
+DEFAULT_CACHE_PATH = Path.home() / ".cache" / "internet-topology-ris" / "as-names.json"
+CACHE_TTL_DAYS = 60
+DEFAULT_CONCURRENCY = 10
+DEFAULT_MIN_DEGREE = 3
+
+
+# ---------------------------------------------------------------------------
+# Cache
+# ---------------------------------------------------------------------------
+
+def load_cache(cache_path: Path) -> dict[str, dict]:
+    if not cache_path.exists():
+        return {}
+    try:
+        return json.loads(cache_path.read_text())
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def save_cache(cache: dict[str, dict], cache_path: Path) -> None:
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    cache_path.write_text(json.dumps(cache, indent=2))
+
+
+def cache_is_fresh(entry: dict) -> bool:
+    try:
+        cached_at = datetime.fromisoformat(entry["cached_at"])
+        return datetime.now(timezone.utc) - cached_at < timedelta(days=CACHE_TTL_DAYS)
+    except (KeyError, ValueError):
+        return False
+
+
+# ---------------------------------------------------------------------------
+# RIPEstat fetch
+# ---------------------------------------------------------------------------
+
+async def fetch_as_name(asn: str, client: httpx.AsyncClient) -> str | None:
+    url = f"{RIPESTAT_BASE}/as-overview/data.json?resource=AS{asn}"
+    try:
+        r = await client.get(url, timeout=30)
+        r.raise_for_status()
+        body = r.json()
+        if body.get("status") != "ok":
+            return None
+        return body.get("data", {}).get("holder") or None
+    except Exception:
+        return None
+
+
+async def fetch_names_batch(
+    asns: list[str],
+    concurrency: int,
+    cache: dict[str, dict],
+) -> None:
+    if not asns:
+        return
+
+    sem = asyncio.Semaphore(concurrency)
+
+    progress = Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        MofNCompleteColumn(),
+        TimeElapsedColumn(),
+        console=console,
+    )
+
+    async def fetch_one(asn: str, client: httpx.AsyncClient) -> None:
+        async with sem:
+            name = await fetch_as_name(asn, client)
+        cache[asn] = {
+            "name": name,
+            "cached_at": datetime.now(timezone.utc).isoformat(),
+        }
+        progress.advance(task)
+
+    async with httpx.AsyncClient(follow_redirects=True) as client:
+        with progress:
+            task = progress.add_task("  Fetching AS names", total=len(asns))
+            await asyncio.gather(*(fetch_one(asn, client) for asn in asns))
+
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
 
 @app.command()
 def main(
     input: Path = typer.Option(..., "--input", "-i", help="Topology edge list file (.txt or .txt.gz)"),
     output: Path = typer.Option(None, "--output", "-o", help="GML output path (default: input stem + .gml)"),
+    enrich: bool = typer.Option(False, "--enrich/--no-enrich", help="Fetch AS holder names from RIPEstat and use as node labels"),
+    min_degree: int = typer.Option(DEFAULT_MIN_DEGREE, "--min-degree", help="With --enrich: only fetch names for nodes with degree >= this value", show_default=True, min=1),
+    concurrency: int = typer.Option(DEFAULT_CONCURRENCY, "--concurrency", help="Max parallel RIPEstat requests (only used with --enrich)", show_default=True, min=1, max=50),
+    cache_file: Path = typer.Option(DEFAULT_CACHE_PATH, "--cache", help=f"AS name cache path (JSON, TTL {CACHE_TTL_DAYS} days)", show_default=True),
 ) -> None:
     t0 = time.perf_counter()
 
@@ -34,11 +133,10 @@ def main(
                 stem = stem[: -len(suffix)]
         output = input.parent / (stem + ".gml")
 
-    opener = gzip.open if input.suffix == ".gz" or _is_gzip(input) else open
+    opener = gzip.open if _is_gzip(input) else open
 
     G = nx.Graph()
-    skipped = 0
-    edge_count = 0
+    skipped = edge_count = 0
 
     console.print(f"[bold]Reading[/bold] {input}")
     with opener(input, "rt") as fh:
@@ -47,10 +145,14 @@ def main(
             if not line or line.startswith("#"):
                 continue
             parts = line.split()
-            if len(parts) != 2:
+            if len(parts) < 2:
                 skipped += 1
                 continue
-            a, b = int(parts[0]), int(parts[1])
+            try:
+                a, b = int(parts[0]), int(parts[1])
+            except ValueError:
+                skipped += 1
+                continue
             for asn in (a, b):
                 if asn not in G:
                     G.add_node(asn, asn=asn, label=str(asn))
@@ -62,14 +164,50 @@ def main(
     if skipped:
         console.print(f"[yellow]Skipped {skipped} malformed lines[/yellow]")
 
+    console.print(f"  {G.number_of_nodes():,} nodes, {G.number_of_edges():,} edges")
+
+    # -----------------------------------------------------------------------
+    # Enrichment
+    # -----------------------------------------------------------------------
+    if enrich:
+        cache = load_cache(cache_file)
+
+        above = [str(n) for n in G.nodes if G.degree(n) >= min_degree]
+        below_count = G.number_of_nodes() - len(above)
+
+        fresh = [asn for asn in above if asn in cache and cache_is_fresh(cache[asn])]
+        stale = [asn for asn in above if asn not in cache or not cache_is_fresh(cache[asn])]
+
+        console.print(
+            f"\n[bold]Enriching[/bold] {len(above):,} nodes (degree >= {min_degree}): "
+            f"[green]{len(fresh):,} cached[/green], [cyan]{len(stale):,} to fetch[/cyan]"
+            f" — {below_count:,} below threshold keep ASN as label"
+        )
+
+        if stale:
+            asyncio.run(fetch_names_batch(stale, concurrency, cache))
+            save_cache(cache, cache_file)
+            console.print(f"  Cache saved → [dim]{cache_file}[/dim]")
+
+        enriched = 0
+        for node in G.nodes:
+            asn_str = str(node)
+            name = cache.get(asn_str, {}).get("name") if asn_str in cache else None
+            if name and G.degree(node) >= min_degree:
+                G.nodes[node]["label"] = name
+                enriched += 1
+
+        console.print(f"  {enriched:,} nodes labelled with holder name")
+
+    # -----------------------------------------------------------------------
+    # Write
+    # -----------------------------------------------------------------------
     console.print(f"[bold]Writing[/bold] {output}")
+    output.parent.mkdir(parents=True, exist_ok=True)
     nx.write_gml(G, output)
 
     elapsed = time.perf_counter() - t0
-    console.print(
-        f"[green]Done[/green] — {G.number_of_nodes():,} nodes, "
-        f"{G.number_of_edges():,} edges, {elapsed:.2f}s"
-    )
+    console.print(f"[green]Done[/green] — {elapsed:.2f}s")
 
 
 def _is_gzip(path: Path) -> bool:
