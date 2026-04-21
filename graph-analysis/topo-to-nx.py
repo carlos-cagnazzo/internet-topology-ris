@@ -2,13 +2,21 @@
 topo-to-nx.py — Import an AS-level topology edge list into a NetworkX GML file.
 
 Reads a two-column topology file (AS1 AS2 per line, space-separated) as
-produced by build-topology.py and writes an undirected NetworkX graph in GML
-format. Plain and gzip-compressed inputs are accepted transparently.
+produced by build-topology.py and writes an undirected NetworkX graph. Plain
+and gzip-compressed inputs are accepted transparently.
+
+Output format is determined by the --output extension:
+  .gml  — NetworkX GML file (default when no --output is given)
+  .txt  — two-column topology edge list (ASN1 ASN2, ASN1 < ASN2, sorted)
 
 Zero-padded ASNs are normalised to plain integers. Each node carries an 'asn'
 (int) and a 'label' (plain ASN string) attribute. With --enrich, nodes with
-degree >= --min-degree have their label replaced with the AS holder name from
-RIPEstat; names are cached locally for 60 days.
+degree >= --enrich-min-degree have their label replaced with the AS holder name
+from RIPEstat; names are cached locally for 60 days.
+
+Use --min-degree to filter edges: only edges where both endpoints have degree
+>= N are written to the output. Use --justify-output to zero-pad ASNs to 8
+digits in .txt output.
 """
 
 import asyncio
@@ -31,7 +39,7 @@ RIPESTAT_BASE = "https://stat.ripe.net/data"
 DEFAULT_CACHE_PATH = Path.home() / ".cache" / "internet-topology-ris" / "as-names.json"
 CACHE_TTL_DAYS = 60
 DEFAULT_CONCURRENCY = 10
-DEFAULT_MIN_DEGREE = 3
+DEFAULT_ENRICH_MIN_DEGREE = 3
 
 
 # ---------------------------------------------------------------------------
@@ -118,9 +126,11 @@ async def fetch_names_batch(
 @app.command()
 def main(
     input: Path = typer.Option(..., "--input", "-i", help="Topology edge list file (.txt or .txt.gz)"),
-    output: Path = typer.Option(None, "--output", "-o", help="GML output path (default: input stem + .gml)"),
-    enrich: bool = typer.Option(False, "--enrich/--no-enrich", help="Fetch AS holder names from RIPEstat and use as node labels"),
-    min_degree: int = typer.Option(DEFAULT_MIN_DEGREE, "--min-degree", help="With --enrich: only fetch names for nodes with degree >= this value", show_default=True, min=1),
+    output: Path = typer.Option(None, "--output", "-o", help="Output path; .gml writes GML, .txt writes topology edge list (default: input stem + .gml)"),
+    min_degree: int = typer.Option(None, "--min-degree", "-d", help="Only write edges where both endpoints have degree >= N"),
+    justify_output: bool = typer.Option(False, "--justify-output", help="Zero-pad ASNs to 8 digits (only applies to .txt output)"),
+    enrich: bool = typer.Option(False, "--enrich/--no-enrich", help="Fetch AS holder names from RIPEstat and use as node labels (GML output only)"),
+    enrich_min_degree: int = typer.Option(DEFAULT_ENRICH_MIN_DEGREE, "--enrich-min-degree", help="With --enrich: only fetch names for nodes with degree >= this value", show_default=True, min=1),
     concurrency: int = typer.Option(DEFAULT_CONCURRENCY, "--concurrency", help="Max parallel RIPEstat requests (only used with --enrich)", show_default=True, min=1, max=50),
     cache_file: Path = typer.Option(DEFAULT_CACHE_PATH, "--cache", help=f"AS name cache path (JSON, TTL {CACHE_TTL_DAYS} days)", show_default=True),
 ) -> None:
@@ -132,6 +142,8 @@ def main(
             if stem.endswith(suffix):
                 stem = stem[: -len(suffix)]
         output = input.parent / (stem + ".gml")
+
+    write_txt = output.suffix == ".txt"
 
     opener = gzip.open if _is_gzip(input) else open
 
@@ -167,47 +179,76 @@ def main(
     console.print(f"  {G.number_of_nodes():,} nodes, {G.number_of_edges():,} edges")
 
     # -----------------------------------------------------------------------
-    # Enrichment
+    # Degree filter
     # -----------------------------------------------------------------------
-    if enrich:
-        cache = load_cache(cache_file)
-
-        above = [str(n) for n in G.nodes if G.degree(n) >= min_degree]
-        below_count = G.number_of_nodes() - len(above)
-
-        fresh = [asn for asn in above if asn in cache and cache_is_fresh(cache[asn])]
-        stale = [asn for asn in above if asn not in cache or not cache_is_fresh(cache[asn])]
-
+    if min_degree is not None:
+        before = G.number_of_edges()
+        remove = [(u, v) for u, v in G.edges() if G.degree(u) < min_degree or G.degree(v) < min_degree]
+        G.remove_edges_from(remove)
+        # Drop isolated nodes
+        G.remove_nodes_from(list(nx.isolates(G)))
         console.print(
-            f"\n[bold]Enriching[/bold] {len(above):,} nodes (degree >= {min_degree}): "
-            f"[green]{len(fresh):,} cached[/green], [cyan]{len(stale):,} to fetch[/cyan]"
-            f" — {below_count:,} below threshold keep ASN as label"
+            f"  [bold]Degree filter[/bold] >= {min_degree}: "
+            f"{G.number_of_edges():,} edges kept, {before - G.number_of_edges():,} dropped"
         )
 
-        if stale:
-            asyncio.run(fetch_names_batch(stale, concurrency, cache))
-            save_cache(cache, cache_file)
-            console.print(f"  Cache saved → [dim]{cache_file}[/dim]")
+    # -----------------------------------------------------------------------
+    # Enrichment (GML only)
+    # -----------------------------------------------------------------------
+    if enrich:
+        if write_txt:
+            console.print("[yellow]--enrich is ignored for .txt output[/yellow]")
+        else:
+            cache = load_cache(cache_file)
 
-        enriched = 0
-        for node in G.nodes:
-            asn_str = str(node)
-            name = cache.get(asn_str, {}).get("name") if asn_str in cache else None
-            if name and G.degree(node) >= min_degree:
-                G.nodes[node]["label"] = name
-                enriched += 1
+            above = [str(n) for n in G.nodes if G.degree(n) >= enrich_min_degree]
+            below_count = G.number_of_nodes() - len(above)
 
-        console.print(f"  {enriched:,} nodes labelled with holder name")
+            fresh = [asn for asn in above if asn in cache and cache_is_fresh(cache[asn])]
+            stale = [asn for asn in above if asn not in cache or not cache_is_fresh(cache[asn])]
+
+            console.print(
+                f"\n[bold]Enriching[/bold] {len(above):,} nodes (degree >= {enrich_min_degree}): "
+                f"[green]{len(fresh):,} cached[/green], [cyan]{len(stale):,} to fetch[/cyan]"
+                f" — {below_count:,} below threshold keep ASN as label"
+            )
+
+            if stale:
+                asyncio.run(fetch_names_batch(stale, concurrency, cache))
+                save_cache(cache, cache_file)
+                console.print(f"  Cache saved → [dim]{cache_file}[/dim]")
+
+            enriched = 0
+            for node in G.nodes:
+                asn_str = str(node)
+                name = cache.get(asn_str, {}).get("name") if asn_str in cache else None
+                if name and G.degree(node) >= enrich_min_degree:
+                    G.nodes[node]["label"] = name
+                    enriched += 1
+
+            console.print(f"  {enriched:,} nodes labelled with holder name")
 
     # -----------------------------------------------------------------------
     # Write
     # -----------------------------------------------------------------------
     console.print(f"[bold]Writing[/bold] {output}")
     output.parent.mkdir(parents=True, exist_ok=True)
-    nx.write_gml(G, output)
+
+    if write_txt:
+        fmt = "{:08d}" if justify_output else "{}"
+        edges = sorted(
+            (min(int(G.nodes[u]["asn"]), int(G.nodes[v]["asn"])),
+             max(int(G.nodes[u]["asn"]), int(G.nodes[v]["asn"])))
+            for u, v in G.edges()
+        )
+        with open(output, "w") as fh:
+            for a, b in edges:
+                fh.write(f"{fmt.format(a)} {fmt.format(b)}\n")
+    else:
+        nx.write_gml(G, output)
 
     elapsed = time.perf_counter() - t0
-    console.print(f"[green]Done[/green] — {elapsed:.2f}s")
+    console.print(f"[green]Done[/green] — {G.number_of_edges():,} edges written, {elapsed:.2f}s")
 
 
 def _is_gzip(path: Path) -> bool:
