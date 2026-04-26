@@ -1,12 +1,19 @@
 """
-nx-to-topo.py — Export a NetworkX GML file back to a two-column topology edge list.
+nx-to-topo.py — Export a NetworkX GML topology graph back to a two-column edge list.
 
-Reads a GML file produced by topo-to-nx.py and writes an AS-level topology
-file (ASN1 ASN2 per line, ASN1 < ASN2, sorted numerically by ASN1). ASNs are
-always taken from the node 'asn' attribute, so enriched GML files (where node
-keys may be holder name strings) are handled correctly.
+This tool is the inverse of topo-to-nx.py. It reads a GML file and writes a
+plain two-column topology file (ASN1 ASN2 per line, ASN1 < ASN2, sorted
+numerically by ASN1) in the same format produced by build-topology.py. This is
+useful when a GML file has been modified externally (e.g. filtered or annotated
+in Gephi or a notebook) and needs to be brought back into the pipeline.
 
-Optionally filters edges to those where both endpoints have degree >= --min-degree.
+ASNs are always read from the node 'asn' attribute rather than the node key.
+This ensures correct behaviour with enriched GML files, where node keys may be
+AS holder name strings instead of numbers. The tool exits with a clear error if
+the input cannot be parsed as a valid GML file or if any node is missing the
+'asn' attribute. Use --min-degree to restrict the output to edges where both
+endpoints meet a degree threshold. Use --justify-output to zero-pad ASNs to 8
+digits for compatibility with Unix sort and awk.
 """
 
 import time
@@ -16,11 +23,11 @@ import networkx as nx
 import typer
 from rich.console import Console
 
-app = typer.Typer(help=__doc__)
+app = typer.Typer()
 console = Console()
 
 
-@app.command()
+@app.command(help=__doc__)
 def main(
     input: Path = typer.Option(..., "--input", "-i", help="GML file produced by topo-to-nx.py"),
     output: Path = typer.Option(None, "--output", "-o", help="Output topology file (default: input stem + .txt)"),

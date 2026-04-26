@@ -1,22 +1,25 @@
 """
-topo-to-nx.py — Import an AS-level topology edge list into a NetworkX GML file.
+topo-to-nx.py — Convert an AS-level topology edge list to a NetworkX graph or filtered topology.
 
-Reads a two-column topology file (AS1 AS2 per line, space-separated) as
-produced by build-topology.py and writes an undirected NetworkX graph. Plain
-and gzip-compressed inputs are accepted transparently.
+This tool reads a two-column topology file (ASN1 ASN2 per line) as produced by
+build-topology.py and builds an undirected NetworkX graph from it. The output
+format is controlled by the extension of --output: a .gml extension (the
+default) writes a NetworkX GML file suitable for import into Gephi, yEd,
+Cytoscape, or any other graph tool; a .txt extension writes a two-column
+topology edge list in the same format as the input (ASN1 < ASN2, sorted
+numerically by ASN1). Both plain and gzip-compressed inputs are accepted.
 
-Output format is determined by the --output extension:
-  .gml  — NetworkX GML file (default when no --output is given)
-  .txt  — two-column topology edge list (ASN1 ASN2, ASN1 < ASN2, sorted)
+Zero-padded ASNs are normalised to plain integers. In GML output, each node
+carries an 'asn' (int) and a 'label' (plain ASN string) attribute; edges carry
+no attributes. Use --min-degree to restrict the output to edges where both
+endpoints have degree >= N in the full graph — useful for extracting the dense
+core or tier-1/tier-2 subgraphs. Use --justify-output to zero-pad ASNs to 8
+digits in .txt output, which enables correct lexicographic sorting with standard
+Unix tools (sort, awk, grep).
 
-Zero-padded ASNs are normalised to plain integers. Each node carries an 'asn'
-(int) and a 'label' (plain ASN string) attribute. With --enrich, nodes with
-degree >= --enrich-min-degree have their label replaced with the AS holder name
-from RIPEstat; names are cached locally for 60 days.
-
-Use --min-degree to filter edges: only edges where both endpoints have degree
->= N are written to the output. Use --justify-output to zero-pad ASNs to 8
-digits in .txt output.
+With --enrich (GML output only), nodes with degree >= --enrich-min-degree have
+their label replaced with the AS holder name fetched from the RIPEstat API.
+Names are cached locally for 60 days to avoid redundant API calls.
 """
 
 import asyncio
@@ -32,7 +35,7 @@ import typer
 from rich.console import Console
 from rich.progress import BarColumn, MofNCompleteColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 
-app = typer.Typer(help=__doc__)
+app = typer.Typer()
 console = Console()
 
 RIPESTAT_BASE = "https://stat.ripe.net/data"
@@ -123,7 +126,7 @@ async def fetch_names_batch(
 # Main
 # ---------------------------------------------------------------------------
 
-@app.command()
+@app.command(help=__doc__)
 def main(
     input: Path = typer.Option(..., "--input", "-i", help="Topology edge list file (.txt or .txt.gz)"),
     output: Path = typer.Option(None, "--output", "-o", help="Output path; .gml writes GML, .txt writes topology edge list (default: input stem + .gml)"),

@@ -1,16 +1,25 @@
 """
-geo-filter.py — Filter a topology to edges where both ASNs belong to given countries.
+geo-filter.py — Filter an AS-level topology to a set of countries.
 
-Accepts a topology edge list (.txt / .txt.gz) or a GML file as input and
-always produces two output files: a .txt topology edge list and a .gml
-NetworkX graph. Edges are retained only when both ASNs are assigned to one
-of the supplied ISO 3166-1 alpha-2 country codes in the NRO delegated stats.
-ASNs not present in the NRO file are excluded.
+This tool filters a topology so that only edges where both ASNs are assigned
+to one of the specified countries are retained. Country assignment is determined
+by the NRO delegated extended statistics file, which maps each registered ASN to
+the ISO 3166-1 alpha-2 country code of the RIR member that received the
+allocation. ASNs not present in the NRO file (unregistered, private, or
+reserved) are treated as having no country and are excluded.
 
-The NRO stats file is fetched automatically and cached next to the input
-file. With --date, the historical snapshot for that date is used (cached
-permanently). Without --date, the latest file is used (re-fetched if older
-than 24 hours).
+The tool accepts either a two-column topology edge list (.txt or .txt.gz) or a
+NetworkX GML file as input, and always produces two output files: a .txt
+topology edge list and a .gml graph. In the GML output, each node carries a
+'country' attribute in addition to 'asn' and 'label', which is useful for
+visualisation and further analysis.
+
+The NRO delegated stats file is fetched automatically from the RIPE NCC FTP
+server and cached next to the input file. Without --date, the latest available
+file is used and re-fetched if the cache is older than 24 hours. With --date
+(YYYYMMDD), the historical snapshot for that date is used instead and cached
+permanently, since historical files never change. This allows reproducible
+filtering tied to a specific point in time.
 """
 
 import gzip
@@ -22,7 +31,7 @@ import networkx as nx
 import typer
 from rich.console import Console
 
-app = typer.Typer(help=__doc__)
+app = typer.Typer()
 console = Console()
 
 NRO_STATS_URL_LATEST = "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats"
@@ -143,7 +152,7 @@ def load_from_gml(path: Path) -> nx.Graph:
 # Main
 # ---------------------------------------------------------------------------
 
-@app.command()
+@app.command(help=__doc__)
 def main(
     input: Path = typer.Option(..., "--input", "-i", help="Topology .txt/.txt.gz or .gml file"),
     output: Path = typer.Option(None, "--output", "-o", help="Output base path without extension (default: input stem + -geo); produces .txt and .gml"),

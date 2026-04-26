@@ -1,9 +1,19 @@
 """
-core.py — Filter a topology edge list to edges where both endpoints meet a minimum degree.
+core.py — Extract the degree-filtered core of an AS-level topology.
 
-Reads a two-column AS-level topology file and outputs only edges where both
-ASNs have degree >= --min-degree. Output is sorted numerically by ASN1 (with
-ASN1 < ASN2 always). Accepts plain or gzip-compressed input.
+This tool reads a two-column topology edge list (ASN1 ASN2 per line) and
+produces a filtered topology containing only the edges where both endpoints
+have degree >= --min-degree in the full graph. This operation is commonly used
+to extract the dense, well-connected core of the Internet topology — discarding
+stub ASes and lightly connected networks while preserving the transit fabric.
+
+The output is a valid topology file in the same format as the input (ASN1 < ASN2,
+sorted numerically by ASN1) and can be fed directly into any other pipeline tool.
+Degree is computed from the input file in a single pass, so no intermediate GML
+conversion is required. Both plain and gzip-compressed inputs are accepted.
+With --wide, a second column is added showing the degree of each endpoint, which
+is useful for inspection and debugging. With --justify-output, ASNs are
+zero-padded to 8 digits, enabling correct lexicographic sorting with Unix tools.
 """
 
 import gzip
@@ -14,11 +24,11 @@ from pathlib import Path
 import typer
 from rich.console import Console
 
-app = typer.Typer(help=__doc__)
+app = typer.Typer()
 console = Console()
 
 
-@app.command()
+@app.command(help=__doc__)
 def main(
     input: Path = typer.Option(..., "--input", "-i", help="Topology edge list file (.txt or .txt.gz)"),
     output: Path = typer.Option(None, "--output", "-o", help="Output file (default: input stem + -core.txt)"),
