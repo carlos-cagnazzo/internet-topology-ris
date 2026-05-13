@@ -16,3 +16,8 @@ nro-delegated-stats
 fetch
 eda/.ipynb_checkpoints
 .ipynb_checkpoints
+
+# Local scratch files
+JoseNoCarlos-RIS.txt
+claudio.adjacencies.txt
+claudio.sh
