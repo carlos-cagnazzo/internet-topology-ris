@@ -141,6 +141,8 @@ A separate directory of tools for analysing topology files as graphs. All run vi
 
 **`graph-analysis/geo-filter.py`** — Filters a topology (`.txt`/`.txt.gz` or `.gml`) to edges where both ASNs are assigned to one of the given ISO 3166-1 alpha-2 country codes per the NRO delegated stats. ASNs absent from the NRO file are excluded. Always writes both a `.txt` topology and a `.gml` (nodes carry a `country` attribute). NRO stats are fetched and cached next to the input file; `--date YYYYMMDD` selects a historical snapshot. Flags: `--input`, `--countries` (comma-separated, required), `--output` (base path, no extension), `--date`, `--justify-output`.
 
+**`graph-analysis/annotate-topo.py`** — Enriches a topology edge list by adding four columns per edge: `cc1 rir1 cc2 rir2` (country and RIR for each ASN). Country codes are lowercase ISO 3166-1 alpha-2; RIR names follow NRO stats terminology (`ripencc`, `arin`, `lacnic`, `apnic`, `afrinic`). ASNs absent from the NRO file are annotated as `unknown unknown`. NRO stats are fetched and cached next to the input file; `--date YYYYMMDD` selects a historical snapshot. Input sort order is preserved. Flags: `--input`, `--output` (default: input stem + `-annotated.txt`), `--date`, `--justify-output`.
+
 **`graph-analysis/core.py`** — Filters a topology edge list to edges where **both** endpoints have degree >= `--min-degree`. Output is a valid topology file (same two-column format, `ASN1 < ASN2`, sorted by ASN1). Degree is computed from the input file directly — no GML needed. Flags: `--input` (required), `--output` (default: input stem + `-core.txt`), `--min-degree` (required), `--wide` (adds `DEG1 DEG2` columns), `--justify-output` (zero-pad ASNs to 8 digits).
 
 ## RIS Data

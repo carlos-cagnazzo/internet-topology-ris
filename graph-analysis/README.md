@@ -202,6 +202,54 @@ uv run graph-analysis/geo-filter.py \
 
 ---
 
+### `annotate-topo.py` — Enrich topology with country and RIR data
+
+Adds four columns to each edge in a topology file: the country code and RIR of
+the first ASN, then the country code and RIR of the second ASN. Country and RIR
+assignments come from the NRO delegated stats. ASNs absent from the NRO file
+(private, reserved, or unregistered) are annotated as `unknown` in both columns.
+
+Country codes are lowercase ISO 3166-1 alpha-2. RIR names follow NRO stats
+terminology: `arin`, `ripencc`, `apnic`, `lacnic`, `afrinic`.
+
+The NRO stats file is fetched and cached next to the input file, using the same
+caching conventions as `geo-filter.py`. Input sort order is preserved.
+
+```
+uv run graph-analysis/annotate-topo.py --input <topology.txt> [OPTIONS]
+```
+
+| Flag | Default | Description |
+|---|---|---|
+| `--input` / `-i` | required | Topology edge list (`.txt` or `.txt.gz`) |
+| `--output` / `-o` | input stem + `-annotated.txt` | Output file |
+| `--date` | latest | NRO stats snapshot date `YYYYMMDD` |
+| `--justify-output` | off | Zero-pad ASNs to 8 digits |
+
+**Example output:**
+
+```
+6057 3359 uy lacnic us arin
+174 1916 us arin br lacnic
+64512 65001 unknown unknown unknown unknown
+```
+
+**Examples:**
+
+```bash
+# Annotate with latest NRO stats
+uv run graph-analysis/annotate-topo.py \
+    --input output/20240101/topology.txt
+
+# Annotate with historical snapshot matching the topology date
+uv run graph-analysis/annotate-topo.py \
+    --input output/20240101/topology.txt \
+    --output output/20240101/topology-annotated.txt \
+    --date 20240101
+```
+
+---
+
 ## Historic
 
 **`topology-to-gml.py`** — An earlier standalone script at the repository root that converted a topology edge list to GML with optional RIPEstat enrichment. Its functionality has been fully merged into `graph-analysis/topo-to-nx.py` (which adds gzip support, progress reporting, and integer `asn` node attributes). The original script was removed in the `v0.2.0` → `v0.3.0` development cycle.
