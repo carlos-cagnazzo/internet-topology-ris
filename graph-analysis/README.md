@@ -8,11 +8,13 @@ Input topology files use the two-column `ASN1 ASN2` format produced by `build-to
 
 ## Tools
 
-### `topology-to-gml.py` — Topology to GML or filtered topology
+### `topology-to-gml.py` — Topology to GML
 
-Imports a topology edge list into an undirected [NetworkX](https://networkx.org/) graph. Output format is determined by the `--output` extension: `.gml` writes a NetworkX GML file (default); `.txt` writes a two-column topology edge list (same format as the input, `ASN1 < ASN2`, sorted numerically).
+Imports a topology edge list into an undirected [NetworkX](https://networkx.org/) graph and writes a GML file suitable for Gephi, yEd, Cytoscape, or any other graph tool.
 
-Zero-padded ASNs are normalised to plain integers. Each node carries an `asn` (integer) and a `label` (plain ASN string) attribute. With `--enrich` (GML only), nodes with degree >= `--enrich-min-degree` have their label replaced with the AS holder name from RIPEstat; names are cached at `~/.cache/internet-topology-ris/as-names.json` with a 60-day TTL.
+Zero-padded ASNs are normalised to plain integers. Each node carries an `asn` (integer) and a `label` (plain ASN string) attribute. With `--enrich`, nodes with degree >= `--enrich-min-degree` have their label replaced with the AS holder name from RIPEstat; names are cached at `~/.cache/internet-topology-ris/as-names.json` with a 60-day TTL.
+
+To produce a filtered topology edge list (`.txt`) instead of a GML, use `topology-core.py` — it performs degree filtering in two linear passes without loading the full graph into memory.
 
 ```
 uv run graph-analysis/topology-to-gml.py --input <topology.txt> [OPTIONS]
@@ -21,10 +23,9 @@ uv run graph-analysis/topology-to-gml.py --input <topology.txt> [OPTIONS]
 | Flag | Default | Description |
 |---|---|---|
 | `--input` / `-i` | required | Topology edge list (`.txt` or `.txt.gz`) |
-| `--output` / `-o` | input stem + `.gml` | Output path; extension sets format (`.gml` or `.txt`) |
-| `--min-degree` / `-d` | off | Only write edges where both endpoints have degree >= N |
-| `--justify-output` | off | Zero-pad ASNs to 8 digits (`.txt` output only) |
-| `--enrich/--no-enrich` | off | Fetch AS holder names from RIPEstat (`.gml` output only) |
+| `--output` / `-o` | input stem + `.gml` | Output `.gml` file |
+| `--min-degree` / `-d` | off | Only include edges where both endpoints have degree >= N |
+| `--enrich/--no-enrich` | off | Fetch AS holder names from RIPEstat |
 | `--enrich-min-degree` | 3 | With `--enrich`: degree threshold for name lookup |
 | `--concurrency` | 10 | Max parallel RIPEstat requests |
 | `--cache` | `~/.cache/…/as-names.json` | AS name cache path |
@@ -36,12 +37,10 @@ uv run graph-analysis/topology-to-gml.py --input <topology.txt> [OPTIONS]
 uv run graph-analysis/topology-to-gml.py \
     --input output/20240101/topology.txt
 
-# Filter to high-degree nodes, output as justified topology file
+# GML of the high-degree core only
 uv run graph-analysis/topology-to-gml.py \
     --input output/20240101/topology.txt \
-    --output output/20240101/topology-tier1k.txt \
-    --min-degree 1000 \
-    --justify-output
+    --min-degree 100
 
 # GML with AS holder name enrichment for high-degree nodes
 uv run graph-analysis/topology-to-gml.py \

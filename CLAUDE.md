@@ -133,7 +133,7 @@ API endpoints used (all under `https://stat.ripe.net/data/`):
 
 A separate directory of tools for analysing topology files as graphs. All run via `uv run graph-analysis/<tool>` from the repo root. See `graph-analysis/README.md` for full usage and examples.
 
-**`graph-analysis/topology-to-gml.py`** — Converts a topology edge list to GML or back to a filtered topology file. Output format determined by `--output` extension: `.gml` (default) writes NetworkX GML; `.txt` writes a two-column topology edge list. `--min-degree N` filters edges where both endpoints have degree >= N. `--justify-output` zero-pads ASNs in `.txt` output. With `--enrich` (GML only), nodes with degree >= `--enrich-min-degree` (default 3) receive their AS holder name from RIPEstat as label; names cached at `~/.cache/internet-topology-ris/as-names.json` (60-day TTL).
+**`graph-analysis/topology-to-gml.py`** — Converts a topology edge list to a NetworkX GML file. Always writes `.gml` output. `--min-degree N` filters edges where both endpoints have degree >= N before writing (useful to reduce the graph before enrichment). With `--enrich`, nodes with degree >= `--enrich-min-degree` (default 3) receive their AS holder name from RIPEstat as label; names cached at `~/.cache/internet-topology-ris/as-names.json` (60-day TTL). To produce a filtered `.txt` topology instead, use `topology-core.py`.
 
 **`graph-analysis/hubs.py`** — Lists ASNs with degree >= `--min-degree` from a GML file. Without `--wide`: one ASN per line, sorted numerically. With `--wide`: two columns (`ASN degree`), sorted by degree descending. Flags: `--input` (required), `--output` (default: input stem + `-hubs.txt`), `--min-degree` (required), `--wide`.
 
