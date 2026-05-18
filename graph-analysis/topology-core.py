@@ -17,12 +17,16 @@ zero-padded to 8 digits, enabling correct lexicographic sorting with Unix tools.
 """
 
 import gzip
+import sys
 import time
 from collections import defaultdict
 from pathlib import Path
 
 import typer
 from rich.console import Console
+
+sys.path.insert(0, str(Path(__file__).parent))
+from lib import is_gzip
 
 app = typer.Typer()
 console = Console()
@@ -45,7 +49,7 @@ def main(
                 stem = stem[: -len(suffix)]
         output = input.parent / (stem + "-core.txt")
 
-    opener = gzip.open if _is_gzip(input) else open
+    opener = gzip.open if is_gzip(input) else open
 
     edges = []
     degree: dict[int, int] = defaultdict(int)
@@ -90,14 +94,6 @@ def main(
 
     elapsed = time.perf_counter() - t0
     console.print(f"[green]Done[/green] — {elapsed:.2f}s")
-
-
-def _is_gzip(path: Path) -> bool:
-    try:
-        with open(path, "rb") as fh:
-            return fh.read(2) == b"\x1f\x8b"
-    except OSError:
-        return False
 
 
 if __name__ == "__main__":

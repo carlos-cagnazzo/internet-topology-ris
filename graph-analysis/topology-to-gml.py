@@ -25,6 +25,7 @@ Names are cached locally for 60 days to avoid redundant API calls.
 import asyncio
 import gzip
 import json
+import sys
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -34,6 +35,9 @@ import networkx as nx
 import typer
 from rich.console import Console
 from rich.progress import BarColumn, MofNCompleteColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
+
+sys.path.insert(0, str(Path(__file__).parent))
+from lib import is_gzip
 
 app = typer.Typer()
 console = Console()
@@ -148,7 +152,7 @@ def main(
 
     write_txt = output.suffix == ".txt"
 
-    opener = gzip.open if _is_gzip(input) else open
+    opener = gzip.open if is_gzip(input) else open
 
     G = nx.Graph()
     skipped = edge_count = 0
@@ -252,14 +256,6 @@ def main(
 
     elapsed = time.perf_counter() - t0
     console.print(f"[green]Done[/green] — {G.number_of_edges():,} edges written, {elapsed:.2f}s")
-
-
-def _is_gzip(path: Path) -> bool:
-    try:
-        with open(path, "rb") as fh:
-            return fh.read(2) == b"\x1f\x8b"
-    except OSError:
-        return False
 
 
 if __name__ == "__main__":

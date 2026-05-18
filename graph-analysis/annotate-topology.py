@@ -21,82 +21,20 @@ preserved in the output.
 """
 
 import gzip
+import sys
 import time
 from pathlib import Path
 
-import httpx
 import typer
 from rich.console import Console
+
+sys.path.insert(0, str(Path(__file__).parent))
+from lib import fetch_nro_stats, is_gzip, load_asn_info
 
 app = typer.Typer()
 console = Console()
 
-NRO_STATS_URL_LATEST = "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats"
-NRO_STATS_URL_HISTORICAL = "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/{date}/nro-delegated-stats"
-NRO_CACHE_LATEST = "nro-delegated-stats"
-NRO_CACHE_DATED = "nro-delegated-stats-{date}"
-NRO_MAX_AGE_SECONDS = 86400
-
 UNKNOWN = "unknown"
-
-
-# ---------------------------------------------------------------------------
-# NRO stats
-# ---------------------------------------------------------------------------
-
-def fetch_nro_stats(cache_dir: Path, date: str | None) -> Path:
-    if date:
-        url = NRO_STATS_URL_HISTORICAL.format(date=date)
-        cache_path = cache_dir / NRO_CACHE_DATED.format(date=date)
-        if cache_path.exists():
-            console.print(f"  [dim]NRO stats ({date}) cached — reusing[/dim] {cache_path}")
-            return cache_path
-    else:
-        url = NRO_STATS_URL_LATEST
-        cache_path = cache_dir / NRO_CACHE_LATEST
-        if cache_path.exists():
-            age = time.time() - cache_path.stat().st_mtime
-            if age < NRO_MAX_AGE_SECONDS:
-                console.print(f"  [dim]NRO stats cache {age / 3600:.1f}h old — reusing[/dim] {cache_path}")
-                return cache_path
-
-    console.print(f"  Downloading NRO delegated stats → [green]{cache_path}[/green]")
-    with httpx.stream("GET", url, follow_redirects=True, timeout=60) as response:
-        response.raise_for_status()
-        cache_path.parent.mkdir(parents=True, exist_ok=True)
-        with cache_path.open("wb") as fh:
-            for chunk in response.iter_bytes(chunk_size=65536):
-                fh.write(chunk)
-    return cache_path
-
-
-def load_asn_info(stats_path: Path) -> dict[int, tuple[str, str]]:
-    """Parse NRO delegated stats and return {asn: (country_code, rir)} for assigned ASNs."""
-    result: dict[int, tuple[str, str]] = {}
-    with stats_path.open() as fh:
-        for line in fh:
-            line = line.strip()
-            if not line or line.startswith("#"):
-                continue
-            fields = line.split("|")
-            if len(fields) < 7:
-                continue
-            if fields[1] == "*" or fields[4] == "summary":
-                continue
-            if fields[2] != "asn":
-                continue
-            if fields[6] != "assigned":
-                continue
-            rir = fields[0]
-            cc = fields[1]
-            try:
-                start = int(fields[3])
-                count = int(fields[4])
-            except ValueError:
-                continue
-            for asn in range(start, start + count):
-                result[asn] = (cc.lower(), rir)
-    return result
 
 
 # ---------------------------------------------------------------------------
@@ -127,7 +65,7 @@ def main(
     console.print(f"  {len(asn_info):,} assigned ASNs loaded")
 
     # Process topology
-    opener = gzip.open if _is_gzip(input) else open
+    opener = gzip.open if is_gzip(input) else open
     fmt = "{:08d}" if justify_output else "{}"
 
     total = unknown_edges = skipped = 0
@@ -171,14 +109,6 @@ def main(
 
     elapsed = time.perf_counter() - t0
     console.print(f"[green]Done[/green] — {elapsed:.2f}s")
-
-
-def _is_gzip(path: Path) -> bool:
-    try:
-        with open(path, "rb") as fh:
-            return fh.read(2) == b"\x1f\x8b"
-    except OSError:
-        return False
 
 
 if __name__ == "__main__":
