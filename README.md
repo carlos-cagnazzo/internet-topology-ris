@@ -320,6 +320,47 @@ uv run topology-ops.py --op sub \
 
 ---
 
+### Topology Annotation: `graph-analysis/annotate-topo.py`
+
+Enriches a topology edge list by appending four columns to each edge: the country code and RIR of the first ASN, then the country code and RIR of the second ASN. Country and RIR data come from the NRO delegated extended stats, which is fetched and cached automatically next to the input file.
+
+```
+uv run graph-analysis/annotate-topo.py --input <topology.txt> [OPTIONS]
+```
+
+| Flag | Default | Description |
+|---|---|---|
+| `--input` / `-i` | required | Topology edge list (`.txt` or `.txt.gz`) |
+| `--output` / `-o` | input stem + `-annotated.txt` | Output file |
+| `--date` | latest | NRO stats snapshot date `YYYYMMDD`; use the topology date for a reproducible, point-in-time annotation |
+| `--justify-output` | off | Zero-pad ASNs to 8 digits |
+
+Country codes are lowercase ISO 3166-1 alpha-2. RIR names follow NRO stats terminology: `arin`, `ripencc`, `apnic`, `lacnic`, `afrinic`. ASNs absent from the NRO file (private, reserved, or unregistered) are annotated as `unknown unknown`.
+
+**Example output:**
+
+```
+6057 3359 uy lacnic us arin
+174 1916 us arin br lacnic
+64512 65001 unknown unknown unknown unknown
+```
+
+**Examples:**
+
+```bash
+# Annotate with latest NRO stats
+uv run graph-analysis/annotate-topo.py \
+  --input output/20251201/topology-20251201.txt
+
+# Annotate using the historical NRO snapshot matching the topology date
+uv run graph-analysis/annotate-topo.py \
+  --input output/20251201/topology-20251201.txt \
+  --output output/20251201/topology-20251201-annotated.txt \
+  --date 20251201
+```
+
+---
+
 ### Topology to GML: `topology-to-gml.py`
 
 Converts a topology edge list to a [GML](https://en.wikipedia.org/wiki/Graph_Modelling_Language) file for import into graph analysis tools such as Gephi, yEd, or Cytoscape.
