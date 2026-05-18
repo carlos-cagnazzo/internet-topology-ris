@@ -53,18 +53,18 @@ uv run graph-analysis/topology-to-gml.py \
 
 ### `hubs.py` — High-degree ASN list
 
-Reads a GML file and writes a list of all ASNs whose degree is greater than or equal to a given threshold.
+Reads a topology edge list (`.txt` or `.txt.gz`) or a GML file and writes a list of all ASNs whose degree is greater than or equal to a given threshold. For `.txt` input, degrees are computed in a single pass — no GML conversion required.
 
 Without `--wide`: one ASN per line, sorted numerically.
 With `--wide`: two columns (`ASN degree`), sorted by degree descending.
 
 ```
-uv run graph-analysis/hubs.py --input <topology.gml> --min-degree <N> [--output <out.txt>] [--wide]
+uv run graph-analysis/hubs.py --input <topology.txt|.gml> --min-degree <N> [--output <out.txt>] [--wide]
 ```
 
 | Flag | Default | Description |
 |---|---|---|
-| `--input` / `-i` | required | GML file produced by `topology-to-gml.py` |
+| `--input` / `-i` | required | Topology edge list (`.txt` or `.txt.gz`) or GML file |
 | `--output` / `-o` | input stem + `-hubs.txt` | Output file |
 | `--min-degree` / `-d` | required | Minimum degree (inclusive) |
 | `--wide` | off | Add degree column; sort by degree descending |
@@ -72,14 +72,14 @@ uv run graph-analysis/hubs.py --input <topology.gml> --min-degree <N> [--output 
 **Examples:**
 
 ```bash
-# ASNs with degree >= 1000, sorted numerically
+# ASNs with degree >= 1000, directly from topology file
 uv run graph-analysis/hubs.py \
-    --input output/20240101/topology.gml \
+    --input output/20240101/topology.txt \
     --min-degree 1000
 
 # Same, with degree column, sorted by degree
 uv run graph-analysis/hubs.py \
-    --input output/20240101/topology.gml \
+    --input output/20240101/topology.txt \
     --min-degree 1000 \
     --wide
 ```
