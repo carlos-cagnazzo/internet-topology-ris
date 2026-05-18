@@ -72,7 +72,7 @@ full-day:
 
 # Step 1c — Download and process a full day of RIS data (bview + all updates) per collector
 ris-day:
-    uv run get-ris-day.py \
+    uv run download-ris-day.py \
         --collectors {{ collectors }} \
         --date {{ date }} \
         --mrt-dir {{ mrt_dir }} \
@@ -80,10 +80,10 @@ ris-day:
 
 # Step 2 — Extract AS paths from downloaded MRT files (handles .gz and .bz2)
 process:
-    uv run process-mrt.py \
+    uv run extract-paths.py \
         --input-files "{{ mrt_dir }}/{{ date }}/*.gz" \
         --output-dir {{ paths_dir }}/{{ date }}
-    uv run process-mrt.py \
+    uv run extract-paths.py \
         --input-files "{{ mrt_dir }}/{{ date }}/*.bz2" \
         --output-dir {{ paths_dir }}/{{ date }}
 

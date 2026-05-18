@@ -1,5 +1,5 @@
 """
-core.py — Extract the degree-filtered core of an AS-level topology.
+topology-core.py — Extract the degree-filtered core of an AS-level topology.
 
 This tool reads a two-column topology edge list (ASN1 ASN2 per line) and
 produces a filtered topology containing only the edges where both endpoints

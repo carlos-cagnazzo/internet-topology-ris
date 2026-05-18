@@ -1,7 +1,7 @@
 """
 hubs.py — List high-degree ASNs from a NetworkX GML topology graph.
 
-This tool reads a GML file produced by topo-to-nx.py and writes a list of all
+This tool reads a GML file produced by topology-to-gml.py and writes a list of all
 ASNs whose degree (number of direct neighbours) is greater than or equal to the
 value given by --min-degree. In the context of AS-level Internet topology, high-
 degree nodes are transit providers, Internet exchange points, and large content
@@ -27,7 +27,7 @@ console = Console()
 
 @app.command(help=__doc__)
 def main(
-    input: Path = typer.Option(..., "--input", "-i", help="GML file produced by topo-to-nx.py"),
+    input: Path = typer.Option(..., "--input", "-i", help="GML file produced by topology-to-gml.py"),
     output: Path = typer.Option(None, "--output", "-o", help="Output file (default: input stem + -hubs.txt)"),
     min_degree: int = typer.Option(..., "--min-degree", "-d", help="Minimum degree (inclusive)"),
     wide: bool = typer.Option(False, "--wide", help="Add degree column; sort by degree descending"),

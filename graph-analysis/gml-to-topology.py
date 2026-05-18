@@ -1,7 +1,7 @@
 """
-nx-to-topo.py — Export a NetworkX GML topology graph back to a two-column edge list.
+gml-to-topology.py — Export a NetworkX GML topology graph back to a two-column edge list.
 
-This tool is the inverse of topo-to-nx.py. It reads a GML file and writes a
+This tool is the inverse of topology-to-gml.py. It reads a GML file and writes a
 plain two-column topology file (ASN1 ASN2 per line, ASN1 < ASN2, sorted
 numerically by ASN1) in the same format produced by build-topology.py. This is
 useful when a GML file has been modified externally (e.g. filtered or annotated
@@ -29,7 +29,7 @@ console = Console()
 
 @app.command(help=__doc__)
 def main(
-    input: Path = typer.Option(..., "--input", "-i", help="GML file produced by topo-to-nx.py"),
+    input: Path = typer.Option(..., "--input", "-i", help="GML file produced by topology-to-gml.py"),
     output: Path = typer.Option(None, "--output", "-o", help="Output topology file (default: input stem + .txt)"),
     min_degree: int = typer.Option(None, "--min-degree", "-d", help="Only include edges where both endpoints have degree >= N"),
     justify_output: bool = typer.Option(False, "--justify-output", help="Zero-pad ASNs to 8 digits"),

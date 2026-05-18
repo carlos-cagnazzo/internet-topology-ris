@@ -1,7 +1,7 @@
 """
 build-topology.py — Build a deduplicated AS-level topology edge list.
 
-Reads AS path files produced by process-mrt.py, extracts all AS-to-AS links,
+Reads AS path files produced by extract-paths.py, extracts all AS-to-AS links,
 and writes a sorted, deduplicated undirected edge list to an output file.
 
 Each line of the output contains two space-separated ASNs representing a link:
@@ -11,7 +11,7 @@ Each line of the output contains two space-separated ASNs representing a link:
     ...
 
 Links are undirected: (A, B) and (B, A) are the same edge. Paths are expected
-to already be clean (no prepending, no AS sets) as produced by process-mrt.py.
+to already be clean (no prepending, no AS sets) as produced by extract-paths.py.
 
 Optionally filters edges to include only ASNs that are formally assigned by one
 of the five RIRs, using the NRO delegated extended stats file as the source of

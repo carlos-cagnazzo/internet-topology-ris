@@ -1,5 +1,5 @@
 """
-get-ris-day.py — Download and process a full day of RIS data per collector.
+download-ris-day.py — Download and process a full day of RIS data per collector.
 
 For each requested collector, downloads the 00:00 UTC bview (full table) and
 all 288 five-minute update files for the given date. AS paths are extracted
@@ -8,7 +8,7 @@ are ignored). The combined result is written to a single path file per
 collector.
 
 Output files are named bview.<collector>.<date>.full.gz.txt to distinguish
-them from the per-snapshot files produced by get-mrt.py + process-mrt.py.
+them from the per-snapshot files produced by get-mrt.py + extract-paths.py.
 Both can coexist in the same paths directory; build-topology.py will include
 both if present.
 """
@@ -100,7 +100,7 @@ def all_hhmms() -> list[str]:
 
 
 # ---------------------------------------------------------------------------
-# AS path cleaning (same rules as process-mrt.py)
+# AS path cleaning (same rules as extract-paths.py)
 # ---------------------------------------------------------------------------
 
 

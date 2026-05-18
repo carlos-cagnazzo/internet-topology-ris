@@ -1,5 +1,5 @@
 """
-process-mrt.py — Extract AS paths from RIPE RIS MRT RIB snapshot files.
+extract-paths.py — Extract AS paths from RIPE RIS MRT RIB snapshot files.
 
 For each .gz MRT file matched by the input glob, invokes bgpreader to parse
 the binary data and writes three sidecar files per input:

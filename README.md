@@ -119,7 +119,7 @@ RouteViews `.bz2` files are processed automatically alongside RIPE RIS `.gz` fil
 
 ---
 
-### Step 2 — Extract AS paths: `process-mrt.py`
+### Step 2 — Extract AS paths: `extract-paths.py`
 
 Processes downloaded MRT files using `bgpreader`, extracting one AS path per line into three sidecar files per input. A file set is skipped if all three outputs already exist.
 
@@ -130,7 +130,7 @@ AS path cleaning is applied before writing:
 Address family is detected from the prefix field: prefixes containing `:` are IPv6; all others are IPv4. Each path is written to the combined file and to the appropriate address-family file.
 
 ```
-uv run process-mrt.py --input-files <glob> [--output-dir <dir>]
+uv run extract-paths.py --input-files <glob> [--output-dir <dir>]
 ```
 
 | Flag | Description |
@@ -148,7 +148,7 @@ uv run process-mrt.py --input-files <glob> [--output-dir <dir>]
 
 **Example:**
 ```bash
-uv run process-mrt.py --input-files "./mrt/*.gz" --output-dir ./paths
+uv run extract-paths.py --input-files "./mrt/*.gz" --output-dir ./paths
 ```
 
 ---
@@ -254,7 +254,7 @@ uv run get-mrt.py \
   --output-dir ./mrt/20251201
 
 # 2. Extract AS paths
-uv run process-mrt.py \
+uv run extract-paths.py \
   --input-files "./mrt/20251201/*.gz" \
   --output-dir ./paths/20251201
 
@@ -320,12 +320,12 @@ uv run topology-ops.py --op sub \
 
 ---
 
-### Topology Annotation: `graph-analysis/annotate-topo.py`
+### Topology Annotation: `graph-analysis/annotate-topology.py`
 
 Enriches a topology edge list by appending four columns to each edge: the country code and RIR of the first ASN, then the country code and RIR of the second ASN. Country and RIR data come from the NRO delegated extended stats, which is fetched and cached automatically next to the input file.
 
 ```
-uv run graph-analysis/annotate-topo.py --input <topology.txt> [OPTIONS]
+uv run graph-analysis/annotate-topology.py --input <topology.txt> [OPTIONS]
 ```
 
 | Flag | Default | Description |
@@ -349,11 +349,11 @@ Country codes are lowercase ISO 3166-1 alpha-2. RIR names follow NRO stats termi
 
 ```bash
 # Annotate with latest NRO stats
-uv run graph-analysis/annotate-topo.py \
+uv run graph-analysis/annotate-topology.py \
   --input output/20251201/topology-20251201.txt
 
 # Annotate using the historical NRO snapshot matching the topology date
-uv run graph-analysis/annotate-topo.py \
+uv run graph-analysis/annotate-topology.py \
   --input output/20251201/topology-20251201.txt \
   --output output/20251201/topology-20251201-annotated.txt \
   --date 20251201

@@ -8,14 +8,14 @@ Input topology files use the two-column `ASN1 ASN2` format produced by `build-to
 
 ## Tools
 
-### `topo-to-nx.py` — Topology to GML or filtered topology
+### `topology-to-gml.py` — Topology to GML or filtered topology
 
 Imports a topology edge list into an undirected [NetworkX](https://networkx.org/) graph. Output format is determined by the `--output` extension: `.gml` writes a NetworkX GML file (default); `.txt` writes a two-column topology edge list (same format as the input, `ASN1 < ASN2`, sorted numerically).
 
 Zero-padded ASNs are normalised to plain integers. Each node carries an `asn` (integer) and a `label` (plain ASN string) attribute. With `--enrich` (GML only), nodes with degree >= `--enrich-min-degree` have their label replaced with the AS holder name from RIPEstat; names are cached at `~/.cache/internet-topology-ris/as-names.json` with a 60-day TTL.
 
 ```
-uv run graph-analysis/topo-to-nx.py --input <topology.txt> [OPTIONS]
+uv run graph-analysis/topology-to-gml.py --input <topology.txt> [OPTIONS]
 ```
 
 | Flag | Default | Description |
@@ -33,18 +33,18 @@ uv run graph-analysis/topo-to-nx.py --input <topology.txt> [OPTIONS]
 
 ```bash
 # Convert to GML
-uv run graph-analysis/topo-to-nx.py \
+uv run graph-analysis/topology-to-gml.py \
     --input output/20240101/topology.txt
 
 # Filter to high-degree nodes, output as justified topology file
-uv run graph-analysis/topo-to-nx.py \
+uv run graph-analysis/topology-to-gml.py \
     --input output/20240101/topology.txt \
     --output output/20240101/topology-tier1k.txt \
     --min-degree 1000 \
     --justify-output
 
 # GML with AS holder name enrichment for high-degree nodes
-uv run graph-analysis/topo-to-nx.py \
+uv run graph-analysis/topology-to-gml.py \
     --input output/20240101/topology.txt \
     --output output/20240101/topology.gml \
     --enrich --enrich-min-degree 100
@@ -65,7 +65,7 @@ uv run graph-analysis/hubs.py --input <topology.gml> --min-degree <N> [--output 
 
 | Flag | Default | Description |
 |---|---|---|
-| `--input` / `-i` | required | GML file produced by `topo-to-nx.py` |
+| `--input` / `-i` | required | GML file produced by `topology-to-gml.py` |
 | `--output` / `-o` | input stem + `-hubs.txt` | Output file |
 | `--min-degree` / `-d` | required | Minimum degree (inclusive) |
 | `--wide` | off | Add degree column; sort by degree descending |
@@ -87,14 +87,14 @@ uv run graph-analysis/hubs.py \
 
 ---
 
-### `core.py` — Core subgraph extraction
+### `topology-core.py` — Core subgraph extraction
 
 Filters a topology edge list to retain only edges where **both** endpoints have degree >= a given threshold. The result is a valid topology file (same two-column format, `ASN1 < ASN2`, sorted numerically by ASN1) and can be used as input to any other tool in the pipeline.
 
 Degree is computed from the input file itself (no GML required). Accepts plain or gzip-compressed topology files.
 
 ```
-uv run graph-analysis/core.py --input <topology.txt> --min-degree <N> [OPTIONS]
+uv run graph-analysis/topology-core.py --input <topology.txt> --min-degree <N> [OPTIONS]
 ```
 
 | Flag | Default | Description |
@@ -109,12 +109,12 @@ uv run graph-analysis/core.py --input <topology.txt> --min-degree <N> [OPTIONS]
 
 ```bash
 # Edges where both endpoints have degree >= 100
-uv run graph-analysis/core.py \
+uv run graph-analysis/topology-core.py \
     --input output/20240101/topology.txt \
     --min-degree 100
 
 # Same, with degree columns and zero-padded ASNs
-uv run graph-analysis/core.py \
+uv run graph-analysis/topology-core.py \
     --input output/20240101/topology.txt \
     --min-degree 100 \
     --wide \
@@ -123,16 +123,16 @@ uv run graph-analysis/core.py \
 
 ---
 
-### `nx-to-topo.py` — GML to topology edge list
+### `gml-to-topology.py` — GML to topology edge list
 
-The inverse of `topo-to-nx.py`. Reads a GML file and writes a two-column
+The inverse of `topology-to-gml.py`. Reads a GML file and writes a two-column
 topology file (`ASN1 ASN2` per line, `ASN1 < ASN2`, sorted numerically by ASN1).
 ASNs are always taken from the node `asn` attribute, so enriched GML files
 (where node keys may be holder name strings) are handled correctly.
 Exits with an error if the input is not a valid GML file.
 
 ```
-uv run graph-analysis/nx-to-topo.py --input <topology.gml> [OPTIONS]
+uv run graph-analysis/gml-to-topology.py --input <topology.gml> [OPTIONS]
 ```
 
 | Flag | Default | Description |
@@ -146,11 +146,11 @@ uv run graph-analysis/nx-to-topo.py --input <topology.gml> [OPTIONS]
 
 ```bash
 # Basic round-trip back to topology format
-uv run graph-analysis/nx-to-topo.py \
+uv run graph-analysis/gml-to-topology.py \
     --input output/20240101/topology.gml
 
 # Export only the dense core with zero-padded ASNs
-uv run graph-analysis/nx-to-topo.py \
+uv run graph-analysis/gml-to-topology.py \
     --input output/20240101/topology.gml \
     --min-degree 100 \
     --justify-output
@@ -202,7 +202,7 @@ uv run graph-analysis/geo-filter.py \
 
 ---
 
-### `annotate-topo.py` — Enrich topology with country and RIR data
+### `annotate-topology.py` — Enrich topology with country and RIR data
 
 Adds four columns to each edge in a topology file: the country code and RIR of
 the first ASN, then the country code and RIR of the second ASN. Country and RIR
@@ -216,7 +216,7 @@ The NRO stats file is fetched and cached next to the input file, using the same
 caching conventions as `geo-filter.py`. Input sort order is preserved.
 
 ```
-uv run graph-analysis/annotate-topo.py --input <topology.txt> [OPTIONS]
+uv run graph-analysis/annotate-topology.py --input <topology.txt> [OPTIONS]
 ```
 
 | Flag | Default | Description |
@@ -238,11 +238,11 @@ uv run graph-analysis/annotate-topo.py --input <topology.txt> [OPTIONS]
 
 ```bash
 # Annotate with latest NRO stats
-uv run graph-analysis/annotate-topo.py \
+uv run graph-analysis/annotate-topology.py \
     --input output/20240101/topology.txt
 
 # Annotate with historical snapshot matching the topology date
-uv run graph-analysis/annotate-topo.py \
+uv run graph-analysis/annotate-topology.py \
     --input output/20240101/topology.txt \
     --output output/20240101/topology-annotated.txt \
     --date 20240101
@@ -252,7 +252,7 @@ uv run graph-analysis/annotate-topo.py \
 
 ## Historic
 
-**`topology-to-gml.py`** — An earlier standalone script at the repository root that converted a topology edge list to GML with optional RIPEstat enrichment. Its functionality has been fully merged into `graph-analysis/topo-to-nx.py` (which adds gzip support, progress reporting, and integer `asn` node attributes). The original script was removed in the `v0.2.0` → `v0.3.0` development cycle.
+**`topology-to-gml.py`** — An earlier standalone script at the repository root that converted a topology edge list to GML with optional RIPEstat enrichment. Its functionality has been fully merged into `graph-analysis/topology-to-gml.py` (which adds gzip support, progress reporting, and integer `asn` node attributes). The original script was removed in the `v0.2.0` → `v0.3.0` development cycle.
 
 ---
 
@@ -260,7 +260,7 @@ uv run graph-analysis/annotate-topo.py \
 
 ```bash
 # 1. Convert topology to GML (for Gephi / graph tools)
-uv run graph-analysis/topo-to-nx.py \
+uv run graph-analysis/topology-to-gml.py \
     --input output/20240101/topology.txt
 
 # 2. Find high-degree ASNs (hubs) from the GML
@@ -269,11 +269,11 @@ uv run graph-analysis/hubs.py \
     --min-degree 500 --wide
 
 # 3. Extract the dense core directly from the topology file
-uv run graph-analysis/core.py \
+uv run graph-analysis/topology-core.py \
     --input output/20240101/topology.txt \
     --min-degree 100
 
 # 4. Convert the core subgraph to GML for further analysis
-uv run graph-analysis/topo-to-nx.py \
+uv run graph-analysis/topology-to-gml.py \
     --input output/20240101/topology-core.txt
 ```

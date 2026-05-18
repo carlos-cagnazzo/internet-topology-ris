@@ -1,5 +1,5 @@
 """
-topo-to-nx.py — Convert an AS-level topology edge list to a NetworkX graph or filtered topology.
+topology-to-gml.py — Convert an AS-level topology edge list to a NetworkX GML graph or filtered topology.
 
 This tool reads a two-column topology file (ASN1 ASN2 per line) as produced by
 build-topology.py and builds an undirected NetworkX graph from it. The output

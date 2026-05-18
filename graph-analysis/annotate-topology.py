@@ -1,5 +1,5 @@
 """
-annotate-topo.py — Enrich an AS-level topology edge list with country and RIR data.
+annotate-topology.py — Enrich an AS-level topology edge list with country and RIR data.
 
 Each line of the input topology (two-column ASN edge list) is annotated with
 four additional space-separated columns: the ISO 3166-1 alpha-2 country code of
