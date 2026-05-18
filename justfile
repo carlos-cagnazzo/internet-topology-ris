@@ -121,8 +121,12 @@ topology-v6:
         --output {{ output_dir }}/{{ date }}/{{ output_v6 }}
 
 # Start JupyterLab bound to the Tailscale interface
+lab2:
+    uv run jupyter lab --ip 100.98.4.21 --no-browser --notebook-dir ./ --IdentityProvider.token=''
+
+# Start JupyterLab bound to the Tailscale interface
 lab:
-    uv run jupyter lab --ip 100.98.4.21 --no-browser --notebook-dir ./ --IdentityProvider.token='cocoliso123'
+    uv run jupyter lab --no-browser --notebook-dir ./ --IdentityProvider.token=''
 
 # Pack output products for a given date and publish to pubpoint
 pack-and-publish:
