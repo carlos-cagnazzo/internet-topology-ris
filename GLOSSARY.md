@@ -109,7 +109,35 @@ The organization name registered as the holder of an ASN, as returned by the RIP
 ## Pipeline and Files
 
 **Topology file / edge list**
-A plain-text file with one undirected edge per line: `ASN1 ASN2`, where `ASN1 < ASN2` (numerically). Sorted numerically by ASN1. Our canonical output format. Extension: `.txt` (may be gzip-compressed despite the extension).
+The canonical output format of this project and the primary input to all graph-analysis tools. A plain-text file where each line represents one undirected AS-level link observed in the BGP data.
+
+Format rules:
+- **Two space-separated columns per line:** `ASN1 ASN2`
+- **`ASN1 < ASN2` numerically** — the smaller ASN always comes first. This is enforced at write time so each undirected edge has exactly one canonical representation and the file is free of duplicates. Comparison is always numeric, never lexicographic (`"9" > "22773"` as strings but `9 < 22773` as integers — we always use integer comparison).
+- **Sorted numerically by ASN1** (then by ASN2 within the same ASN1).
+- **Deduplicated** — each edge appears at most once, regardless of how many collectors or paths it was observed in.
+- **`#` lines are comments** and are skipped by all tools. Blank lines are also skipped.
+- **Extension is always `.txt`**, even when the file is gzip-compressed. Compression is detected by magic bytes (`\x1f\x8b`), not by the extension. All tools handle both plain and compressed files transparently.
+
+Example (plain integers):
+```
+174 1916
+174 3356
+1299 3356
+1299 15169
+3356 15169
+```
+
+Example with `--justify-output` (zero-padded to 8 digits — same data, same rules):
+```
+00000174 00001916
+00000174 00003356
+00001299 00003356
+00001299 00015169
+00003356 00015169
+```
+
+The justified variant is the same format — just with fixed-width ASN fields. All tools that read topology files handle both variants transparently by parsing columns as integers before comparing.
 
 **Path file**
 A plain-text file (gzip-compressed, detected by magic bytes) with one AS path per line as extracted from MRT files. Input to `build-topology.py`. Three variants per input MRT: combined (`.gz.txt`), IPv4-only (`.gz.v4.txt`), IPv6-only (`.gz.v6.txt`).
