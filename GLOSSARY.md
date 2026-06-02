@@ -28,13 +28,17 @@ A BGP traffic engineering technique where an AS repeats its own ASN multiple tim
 A notation in AS paths (`{64500,64501}`) indicating that multiple ASes were involved at that point due to route aggregation. We truncate the path at an AS set and keep only edges before it.
 
 **Announcement / Advertisement**
-A BGP message that a router sends to its peers to declare reachability for a prefix via an AS path.
+A BGP message that a router sends to its peers to declare reachability for a prefix via an AS path. Announcements are the raw material of this project: `extract-paths.py` reads them from bview and update files and extracts the AS path from each one to build the edge list.
 
 **Withdrawal**
 A BGP message that a router sends to retract a previously announced prefix. We ignore withdrawals — only announcements are processed.
 
 **Peering (BGP peering)**
-A BGP session between two routers. Route collectors peer with many BGP speakers to receive their full routing tables.
+A BGP session between two routers. Two distinct relationships both use BGP sessions:
+- **Settlement-free peering**: two networks agree to exchange each other's traffic for free, typically at an IXP. Neither pays the other. Edges between two large networks in the topology often represent this.
+- **Transit / customer peering**: a customer AS pays a provider AS for access to the full Internet. The provider announces all routes to the customer and vice versa. Edges between a high-degree hub and a low-degree stub typically represent this.
+
+Route collectors peer with many BGP speakers to passively receive their full routing tables without injecting any routes themselves.
 
 **Transit**
 A commercial relationship where one AS (the transit provider) carries traffic on behalf of another AS (the customer), offering reachability to the full Internet in exchange for payment. Transit providers typically appear as high-degree nodes in topology.
@@ -65,7 +69,28 @@ A binary MRT-format file recording incremental BGP announcements and withdrawals
 The binary file format used to store BGP data (both RIB dumps and update files). Both `.gz` (RIPE RIS) and `.bz2` (RouteViews) compressed MRT files are supported.
 
 **bgpreader**
-The command-line tool (part of the BGPStream project) that we use to parse MRT files into pipe-delimited text. It handles `.gz` and `.bz2` decompression transparently. Column 11 (0-indexed) is the AS path; column 9 is the prefix; field[1] == `R` for RIB entries, `A` for announcements.
+The command-line tool (part of the BGPStream project) that we use to parse MRT files into pipe-delimited text. It handles `.gz` and `.bz2` decompression transparently.
+
+Invocation:
+```bash
+bgpreader -d singlefile -o rib-file=<path>     # bview / RIB dump
+bgpreader -d singlefile -o upd-file=<path>     # update file
+```
+
+Each output line is `|`-delimited. Relevant columns (0-indexed):
+
+| Index | Field | Notes |
+|---|---|---|
+| 1 | Element type | `R` = RIB entry (process these); `B` = block start marker (skip); `A` = announcement in update files |
+| 9 | Prefix | e.g. `192.0.2.0/24` (IPv4) or `2001:db8::/32` (IPv6). Presence of `:` → IPv6. |
+| 11 | AS path | Space-separated ASNs, e.g. `1299 3356 15169`. May contain AS sets: `1299 {3356,3257} 15169`. |
+
+Sample output line:
+```
+ribs|R|1704067200|...||1299|192.0.2.1|192.0.2.0/24|192.0.2.1|1299 3356 15169|15169|...
+```
+
+Only lines where field[1] == `R` (bview) or `A` (updates) are processed; `B` lines are skipped.
 
 ---
 
@@ -78,8 +103,20 @@ The coordinating body for the five Regional Internet Registries (RIRs). Publishe
 A `|`-delimited flat file published by the NRO listing all allocated and assigned Internet number resources (ASNs, IPv4, IPv6) per RIR. We use it to map ASNs to country codes and RIRs.
 - Latest: `https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats`
 - Historical: `https://ftp.ripe.net/pub/stats/ripencc/nro-stats/{YYYYMMDD}/nro-delegated-stats`
-- Only records with `status=assigned` are used; `available` and `reserved` are discarded.
 - Cached next to the input file; re-downloaded if older than 24 hours (latest) or permanently (historical).
+
+Field structure (0-indexed, `|`-delimited):
+
+| Index | Field | Example |
+|---|---|---|
+| 0 | RIR | `lacnic` |
+| 1 | Country code | `UY` (uppercase in the file; we normalise to lowercase) |
+| 2 | Resource type | `asn`, `ipv4`, or `ipv6` — we only process `asn` records |
+| 3 | Start ASN | `6057` |
+| 4 | Count | `1` (expand range: ASNs `start` through `start + count - 1`) |
+| 6 | Status | `assigned`, `available`, or `reserved` — we only use `assigned` |
+
+Lines where field[1] == `*` (summary totals) or field[4] == `summary` are skipped. If an ASN is not present in this file (private range, unregistered, or simply not yet delegated), it is annotated as `unknown`.
 
 **RIR (Regional Internet Registry)**
 One of five organizations responsible for allocating Internet number resources in their region. Names as used in NRO stats (and in our output):
@@ -99,7 +136,7 @@ An ASN with `status=assigned` in the NRO stats — formally delegated to an orga
 ASNs not in the NRO stats, or with status `available` or `reserved`. Examples: 64512–65534 (old 16-bit private range), 4200000000–4294967294 (32-bit private range). Annotated as `unknown` in `annotate-topology.py`.
 
 **Country code (cc)**
-ISO 3166-1 alpha-2 two-letter code (e.g. `uy`, `br`, `us`). Always lowercase in our output. Comes from the NRO stats `country` field.
+ISO 3166-1 alpha-2 two-letter code (e.g. `uy`, `br`, `us`). Always lowercase in our output. Comes from the NRO stats `country` field. If an ASN is absent from the NRO file (private, reserved, or unregistered), its country code is reported as `unknown` — it does not mean the AS has no country, only that it has no formal delegation record.
 
 **Holder name**
 The organization name registered as the holder of an ASN, as returned by the RIPEstat `as-overview` API endpoint. Used as node labels in enriched GML files.
@@ -140,10 +177,42 @@ Example with `--justify-output` (zero-padded to 8 digits — same data, same rul
 The justified variant is the same format — just with fixed-width ASN fields. All tools that read topology files handle both variants transparently by parsing columns as integers before comparing.
 
 **Path file**
-A plain-text file (gzip-compressed, detected by magic bytes) with one AS path per line as extracted from MRT files. Input to `build-topology.py`. Three variants per input MRT: combined (`.gz.txt`), IPv4-only (`.gz.v4.txt`), IPv6-only (`.gz.v6.txt`).
+A file produced by `extract-paths.py` (or `download-ris-day.py`) containing one cleaned AS path per line. Input to `build-topology.py`.
+
+Format rules:
+- One AS path per line: space-separated ASNs, e.g. `1299 3356 15169`
+- Prepending already collapsed and AS sets already truncated (see *AS path* cleaning rules)
+- `#` lines are comments; blank lines are skipped
+- **Always gzip-compressed** despite the `.txt` extension. Compression is detected by magic bytes (`\x1f\x8b`), not the extension. `build-topology.py` handles both compressed and plain files transparently.
+
+Three variants are produced per input MRT file:
+
+| Suffix | Contents |
+|---|---|
+| `.gz.txt` | All paths (IPv4 + IPv6 combined) |
+| `.gz.v4.txt` | IPv4-only paths (prefix contained no `:`) |
+| `.gz.v6.txt` | IPv6-only paths (prefix contained `:`) |
+
+Example lines:
+```
+1299 3356 15169
+174 3356 22773
+6057 6762 1299 3356
+```
 
 **Annotated topology**
-A topology file with four additional columns per edge: `cc1 rir1 cc2 rir2`. Produced by `annotate-topology.py`. Example line: `6057 3359 uy lacnic us arin`.
+A topology file extended with four additional space-separated columns per edge: `cc1 rir1 cc2 rir2` — the country code and RIR of ASN1, then the country code and RIR of ASN2. Produced by `annotate-topology.py`.
+
+Example lines:
+```
+6057 3359 uy lacnic us arin
+174 1916 us arin br lacnic
+64512 65001 unknown unknown unknown unknown
+```
+
+The `unknown unknown` case means the ASN was not found in the NRO delegated stats (private range, reserved, or unregistered) — not that it has no country.
+
+**Important**: the annotated file is not a valid plain topology file. Tools that expect a two-column topology (`ASN1 ASN2`) will fail or misparse it because of the extra columns. Use the original `.txt` file as input to graph-analysis tools and the annotated file only for analysis or filtering that needs country/RIR data.
 
 **GML file**
 A topology represented as a NetworkX GML graph file, suitable for import into Gephi, yEd, or Cytoscape. Nodes carry `asn` (integer) and `label` (string) attributes; enriched nodes have their AS holder name as label.
@@ -155,7 +224,7 @@ A file written alongside an input file with a related name (e.g. `topology-asns.
 A per-input-file pickle cache written by `build-topology.py` (as `<name>.topcache`), recording the edges, ASNs, dropped ASNs, and raw path count. Invalidated if the input file or NRO stats file changes. Speeds up repeated runs.
 
 **Justified format / zero-padded ASNs**
-ASNs written as 8-digit zero-padded strings (e.g. `00006057` instead of `6057`). Enabled by `--justify-output`. Useful for lexicographic sorting tools that do not understand numeric ordering.
+ASNs written as 8-digit zero-padded strings (e.g. `00006057` instead of `6057`). Enabled by `--justify-output` on any tool that writes topology files. See *Topology file / edge list* for examples. Useful when piping output to Unix tools (`sort`, `comm`, `diff`) that sort lexicographically.
 
 ---
 
@@ -163,6 +232,9 @@ ASNs written as 8-digit zero-padded strings (e.g. `00006057` instead of `6057`).
 
 **Degree**
 The number of direct neighbours of a node (AS) in the topology graph — i.e. the count of distinct ASes it is directly connected to.
+
+**IXP (Internet Exchange Point)**
+A physical infrastructure (typically a shared Layer 2 switching fabric at a data centre) where many networks interconnect and exchange traffic directly, usually via settlement-free peering. Large IXPs (AMS-IX, DE-CIX, IX.br, etc.) appear as high-degree nodes in topology because they peer with hundreds of networks. Sometimes represented as a single ASN in the topology, sometimes invisible (if members peer directly without an IXP ASN in the path).
 
 **Hub**
 An AS with a very high degree. In Internet topology, hubs are typically transit providers, large IXPs, or major content networks (Tier-1 and Tier-2 operators). Extracted by `hubs.py`.
@@ -207,7 +279,7 @@ IPv4 or IPv6. Detected from the prefix field in bgpreader output (presence of `:
 ## Conventions
 
 **`ASN1 < ASN2`**
-Edges are always stored with the numerically smaller ASN first. Ensures each undirected edge appears exactly once and sorting is consistent. Comparison is always numeric — not lexicographic (string `"22773" < "6"` but integer `22773 > 6`).
+See *Topology file / edge list* for the full explanation. Short form: the numerically smaller ASN always comes first in each edge, enforced at write time, using integer comparison (never lexicographic).
 
 **Collector spec / range notation**
 The format accepted by `--collectors`: individual names (`rrc00`), comma-separated lists (`rrc00,rrc04`), inclusive ranges (`rrc00-rrc10`), or mixed (`rrc00-rrc05,rrc11`).
