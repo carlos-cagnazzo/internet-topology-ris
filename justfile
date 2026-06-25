@@ -126,7 +126,7 @@ lab2:
 
 # Start JupyterLab bound to the Tailscale interface
 lab:
-    uv run jupyter lab --no-browser --notebook-dir ./ --IdentityProvider.token=''
+    uv run jupyter lab --ip 0.0.0.0 --no-browser --notebook-dir ./ --IdentityProvider.token=''
 
 # Pack output products for a given date and publish to pubpoint
 pack-and-publish:
