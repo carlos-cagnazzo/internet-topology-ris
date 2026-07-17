@@ -49,7 +49,8 @@ download:
 # Step 1b — Download RIB snapshots from RouteViews collectors
 download-routeviews:
     uv run get-routeviews.py \
-        --collectors route-views.amsix,ix-br2.gru,route-views2,route-views.sg \
+        --collectors route-views.amsix,ix-br2.gru,namex.fco,route-views2,route-views.sg,\
+                     crix.sjo,hkix.hkg,route-views.chicago,route-views.kixp,route-views.rio,route-views.perth,pacwave.lax \
         --date {{ date }} \
         --output-dir {{ mrt_dir }}/{{ date }}
 

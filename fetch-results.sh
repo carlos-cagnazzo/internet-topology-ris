@@ -17,6 +17,7 @@ SOURCES=(
 INCLUDES=(
     "topology*-asns.txt"
     "topology-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9].txt"
+    "topology-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-paths.txt"
 )
 
 # Files to skip (rsync exclude pattern) — applied after include
@@ -46,7 +47,7 @@ for src in "${SOURCES[@]}"; do
         --exclude="${EXCLUDE}" \
         --exclude="*" \
         --progress \
-        "${src}" "${dest}/"; then
+        "${src}" "${dest}/" || true ; then
         echo "==> ${host}: done"
     else
         echo "==> ${host}: FAILED (exit $?)" >&2
