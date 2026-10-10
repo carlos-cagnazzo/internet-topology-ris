@@ -19,13 +19,17 @@ just date=20240101 collectors=rrc00-rrc05,rrc11 pipeline
 # Run individual steps
 just date=20240101 collectors=rrc00-rrc25 download
 just date=20240101 download-routeviews
-just date=20240101 collectors=rrc00-rrc25 ris-day   # bview + updates, replaces download+process for RIS
-just date=20240101 full-day                          # ris-day (all collectors) + routeviews + process + topology
 just date=20240101 process
 just date=20240101 topology          # combined + v4 + v6
 just date=20240101 topology-combined
 just date=20240101 topology-v4
 just date=20240101 topology-v6
+
+# Fleet / distributed use
+# On each node: assign a collector slice and run download + process only
+just date=20240101 collectors=rrc00-rrc05 slice
+# Collect path files centrally (via fetch-results.sh), then:
+just date=20240101 topology
 
 # Pack and publish output products
 just date=20240101 pack-and-publish
@@ -64,16 +68,9 @@ Three scripts forming a linear pipeline, orchestrated via `justfile`:
 
    **`get-routeviews.py`** — same interface as `get-mrt.py` but targets the RouteViews archive. Invoked as the `download-routeviews` recipe with a fixed collector list: `route-views.amsix`, `ix-br2.gru`, `namex.fco`, `route-views2`, `route-views.sg`, `crix.sjo`, `hkix.hkg`, `route-views.chicago`, `route-views.kixp`, `route-views.rio`, `route-views.perth`, `pacwave.lax`. No range notation (collectors don't follow a numeric sequence). Output filenames: `rib.<collector>.<date>.0000.bz2`. URL pattern: `https://archive.routeviews.org/<collector>/bgpdata/YYYY.MM/RIBS/rib.YYYYMMDD.0000.bz2`. Both `download` and `download-routeviews` are dependencies of `pipeline`.
 
-   **`download-ris-day.py`** — alternative to `get-mrt.py` + `extract-paths.py` for RIS collectors. Downloads the bview AND all 288 five-minute update files for the given date, extracts paths from both (bview: `field[1]=='R'`; updates: `field[1]=='A'`, withdrawals ignored), and writes three compressed path files per collector (mirroring `extract-paths.py`):
-   - `bview.<collector>.<date>.full.gz.txt` — combined paths
-   - `bview.<collector>.<date>.full.gz.v4.txt` — IPv4-only paths
-   - `bview.<collector>.<date>.full.gz.v6.txt` — IPv6-only paths
-
-   Address family is detected from bgpreader column 9 (prefix) exactly as in `extract-paths.py`. A collector is skipped only if all three output files already exist. `--keep` preserves update files on disk (bview always kept). `--concurrency` caps parallel update downloads (default 20). Invoked via the `ris-day` justfile recipe. bgpreader option for update files: `upd-file=<path>` (vs `rib-file=<path>` for bview).
-
    `--collectors` accepts a comma-separated mix of individual names and ranges: `rrc00`, `rrc00,rrc04,rrc11`, `rrc00-rrc10`, `rrc00-rrc05,rrc11,rrc23`.
 
-   The **`full-day`** justfile recipe ties `ris-day` + `download-routeviews` + `process` + `topology` into a single command. It runs `ris-day` sequentially across all 23 active RIS collectors (rrc00–rrc25, excluding rrc08/rrc09/rrc17) so that each collector's update files are downloaded, processed, and deleted before the next one starts — keeping disk usage bounded. Equivalent to the per-step sequence but hands-free: `just date=20240101 full-day`.
+   **Note:** both RIS and RouteViews use bview-only (00:00 UTC RIB snapshot). Intraday update files are not collected.
 
 2. **`extract-paths.py`** — Calls `bgpreader` on each MRT file (`.gz` or `.bz2`) to extract AS paths, writing three sidecar files per input to `--output-dir` (default `./paths`). Output filenames append `.txt`, `.v4.txt`, `.v6.txt` to the full input filename (including its `.gz`/`.bz2` extension):
    - `<name>.gz.txt` / `<name>.bz2.txt` — all paths (combined)
@@ -82,26 +79,21 @@ Three scripts forming a linear pipeline, orchestrated via `justfile`:
 
    Address family is detected from bgpreader column 9 (prefix): presence of `:` indicates IPv6. Each path is written to the combined file and to the appropriate AF file. A file set is skipped only if all three output files already exist. The justfile passes `./paths/<date>` as `--output-dir`. bgpreader handles both `.gz` and `.bz2` inputs transparently. The justfile `process` recipe runs twice — once for `*.gz` and once for `*.bz2` — so both RIPE RIS and RouteViews files are processed automatically. If no files match a glob, the invocation prints a notice and exits cleanly.
 
-3. **`build-topology.py`** — Reads `.txt` path files (via `--input` glob, repeatable), extracts edges, and writes output files to the directory of `--output` (default `./topology.txt`). The justfile runs it three times, passing both `*.gz.*` and `*.bz2.*` globs so RIPE RIS and RouteViews files are merged seamlessly. Always produces three files:
+3. **`build-topology.py`** — Reads `.txt` path files (via `--input` glob, repeatable), extracts edges, and writes output files to the directory of `--output` (default `./topology.txt`). The justfile runs it three times, passing both `*.gz.*` and `*.bz2.*` globs so RIS and RouteViews files are merged seamlessly. Always produces two files:
    - `{stem}.txt` — deduplicated undirected edge list, one `AS1 AS2` per line, sorted numerically
    - `{stem}-asns.txt` — sorted list of all unique ASNs present in the topology
-   - `{stem}-paths.txt` — deduplicated list of unique AS paths seen across all input files, sorted fully numerically across all ASN fields; paths are directional (BGP semantics preserved). Per-file paths are sorted and deduplicated in worker processes via chunked sort + `heapq.merge`; the final step merges all per-file sorted files into one globally deduplicated output.
 
    Optional flags:
+   - `--paths` — also write `{stem}-paths.txt`: deduplicated AS paths, sorted fully numerically. Off by default (paths files are large and expensive). Per-file paths are sorted and deduplicated in worker processes via chunked sort + `heapq.merge`; the final step merges all per-file sorted files into one globally deduplicated output.
    - `--filter-registered` — filters at the **path level**: a path is excluded if *any* of its ASNs is not `assigned` per the NRO delegated stats. Excluded ASNs are collected in `{stem}-dropped-asns.txt`. The stats file is cached next to the input `.txt` files; see `--date` for which file is fetched.
    - `--date YYYYMMDD` — when provided alongside `--filter-registered`, fetches the historical NRO stats snapshot for that date (`https://ftp.ripe.net/pub/stats/ripencc/nro-stats/{YYYYMMDD}/nro-delegated-stats`) instead of the latest file. Historical files are cached permanently (they never change). Without `--date`, the latest file is used and re-downloaded if older than 24 hours. Cache filenames: `nro-delegated-stats` (latest) or `nro-delegated-stats-{YYYYMMDD}` (historical), stored next to the input `.txt` files.
    - `--justify-output` — zero-pads all ASNs to 8 digits in all output files (e.g. `6057` → `00006057`). Does not affect terminal output.
-   - `--no-paths` — skip the paths sort/merge step entirely. Use when only the edge list and ASN list are needed.
    - `--workers N` — number of parallel `ProcessPoolExecutor` workers (default: `cpu_count`). Each worker processes one input file independently.
-
-   **Per-file cache**: after processing, each input file gets two sidecar files written next to it:
-   - `<name>.topcache` — pickle with edges set, asns set, dropped_asns set, and raw path count. Keyed on (input mtime, NRO stats mtime, filter_registered flag). On subsequent runs, valid cache entries are loaded without re-reading the input file.
-   - `<name>.topcache.paths` — sorted+deduplicated paths for that file (plain, un-justified). Used directly as input to the final `heapq.merge` step. Not written when `--no-paths` is active.
 
 ## Conventions
 
 - All scripts: measure and display total execution time on exit; show progress when processing multiple files; include inline docstrings and rich `--help` output.
-- **Path files are gzip-compressed** (`compresslevel=1`). Both `extract-paths.py` and `download-ris-day.py` write compressed output despite the `.txt` extension. `build-topology.py` detects compression via the `\x1f\x8b` magic bytes and opens files with `gzip.open()` transparently — plain text files are also still accepted.
+- **Path files are gzip-compressed** (`compresslevel=1`). `extract-paths.py` writes compressed output despite the `.txt` extension. `build-topology.py` detects compression via the `\x1f\x8b` magic bytes and opens files with `gzip.open()` transparently — plain text files are also still accepted.
 - `--collectors` is mandatory with no default.
 - AS path processing rules (applied in `extract-paths.py`):
   - Collapse consecutive duplicate ASNs before extracting edges (remove prepending): `A A B C` → `A B C`.
@@ -122,6 +114,13 @@ Three scripts forming a linear pipeline, orchestrated via `justfile`:
 ## Helper Tools
 
 **`topology-ops.py`** — Set operations on two or more topology edge list files. Input files are positional arguments (minimum 2). `--op add` produces the union of all inputs; `--op sub` produces edges in the first file not present in any of the remaining files. Both plain and zero-padded ASN formats handled transparently (comparison is always numeric). `--justify-output` follows the same convention as other tools.
+
+**`fetch-results.sh`** — see below. The typical distributed workflow is:
+1. On each node: `just date=YYYYMMDD collectors=<slice> slice` — runs `download` + `process` for the assigned collector slice, producing path files only.
+2. Central node: `./fetch-results.sh` to rsync path files from all nodes.
+3. Central node: `just date=YYYYMMDD topology` to merge and build the final edge lists.
+
+The `slice` recipe uses the `collectors` variable for download but runs `process` against `mrt_dir/date/*.gz` and `*.bz2`, so only the files downloaded in that run are processed.
 
 **`download-routeviews-month.sh`** — Downloads one RouteViews bview per day for an entire month using the `download-routeviews` recipe. Usage: `./download-routeviews-month.sh YYYYMM [parallel_jobs]` (default 4 parallel jobs). Downloads land in `./mrt-routeviews/YYYYMMDD/`. Per-day logs go to `./logs/routeviews-YYYYMM/YYYYMMDD.log`.
 

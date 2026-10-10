@@ -18,26 +18,22 @@ of the five RIRs, using the NRO delegated extended stats file as the source of
 truth. The stats file is cached next to the input files and re-downloaded only
 if it is more than 24 hours old.
 
-Always writes two sidecar files (unless --no-paths is set):
-  {stem}-asns.txt  — unique ASNs present in the final topology
-  {stem}-paths.txt — unique AS paths seen across all input files
+Always writes two output files:
+  {stem}.txt      — deduplicated undirected edge list, sorted numerically
+  {stem}-asns.txt — sorted list of all unique ASNs in the topology
 
-Performance features:
-  - Each input file's result (edges, ASNs, paths) is cached in a sidecar file
-    (.topcache / .topcache.paths) and reused on subsequent runs as long as
-    neither the input file nor the NRO stats have changed.
-  - Input files are processed in parallel using ProcessPoolExecutor.
-  - --no-paths skips the paths sort/merge step entirely for faster runs.
+With --paths, also writes:
+  {stem}-paths.txt — unique AS paths seen across all input files, sorted numerically
+
+Input files are processed in parallel using ProcessPoolExecutor.
 """
 
 import gzip
 import heapq
 import os
-import pickle
 import tempfile
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from dataclasses import dataclass
 from glob import glob
 from pathlib import Path
 
@@ -78,26 +74,6 @@ NRO_MAX_AGE_SECONDS = 24 * 3600
 ASN_FIELD_WIDTH = 8
 SORT_CHUNK_LINES = 500_000
 
-# Per-file cache sidecar extensions
-CACHE_VERSION = 1
-CACHE_META_EXT = ".topcache"         # pickle: edges, asns, dropped_asns, counts
-CACHE_PATHS_EXT = ".topcache.paths"  # sorted+deduped paths (plain, unjustified)
-
-
-# ---------------------------------------------------------------------------
-# Cache data structure
-# ---------------------------------------------------------------------------
-
-
-@dataclass
-class _CacheEntry:
-    version: int
-    cache_key: tuple  # (input_mtime, nro_mtime, filter_registered)
-    edges: set        # set[tuple[str, str]]
-    asns: set         # set[str]
-    dropped_asns: set # set[str]
-    raw_path_count: int
-
 
 # ---------------------------------------------------------------------------
 # Worker-process globals — populated by _worker_init via ProcessPoolExecutor
@@ -105,21 +81,18 @@ class _CacheEntry:
 
 _W_REGISTERED: "set[str] | None" = None
 _W_FILTER: bool = False
-_W_NRO_MTIME: float = 0.0
-_W_NO_PATHS: bool = False
+_W_PATHS: bool = False
 
 
 def _worker_init(
     registered_asns: "set[str] | None",
     filter_registered: bool,
-    nro_mtime: float,
-    no_paths: bool,
+    write_paths: bool,
 ) -> None:
-    global _W_REGISTERED, _W_FILTER, _W_NRO_MTIME, _W_NO_PATHS
+    global _W_REGISTERED, _W_FILTER, _W_PATHS
     _W_REGISTERED = registered_asns
     _W_FILTER = filter_registered
-    _W_NRO_MTIME = nro_mtime
-    _W_NO_PATHS = no_paths
+    _W_PATHS = write_paths
 
 
 # ---------------------------------------------------------------------------
@@ -128,11 +101,7 @@ def _worker_init(
 
 
 def open_path_file(path: Path):
-    """Open a path file for reading, handling both plain text and gzip-compressed formats.
-
-    Detects gzip by checking the two-byte magic number at the start of the
-    file. Returns a text-mode file handle in either case, so callers need no
-    special handling.
+    """Open a path file for reading, transparently handling gzip compression.
 
     Args:
         path: Path to a plain or gzip-compressed AS path file.
@@ -149,9 +118,6 @@ def open_path_file(path: Path):
 
 def path_sort_key(line: str) -> tuple:
     """Return a fully numeric sort key for an AS path line.
-
-    Converts every ASN token to int so that sorting is numeric across all
-    fields, not lexicographic.
 
     Args:
         line: Space-separated AS path string, optionally with a trailing newline.
@@ -182,11 +148,6 @@ def fmt(asn: str, justify: bool) -> str:
 
 def fetch_nro_stats(cache_dir: Path, date: "str | None") -> Path:
     """Return path to a local NRO delegated stats file, downloading if needed.
-
-    When *date* is provided, fetches the historical snapshot for that date and
-    caches it permanently (historical files never change). When *date* is None,
-    fetches the latest file and re-downloads if the cache is more than 24 hours
-    old.
 
     Args:
         cache_dir: Directory where the stats file should be cached.
@@ -226,13 +187,6 @@ def fetch_nro_stats(cache_dir: Path, date: "str | None") -> Path:
 def load_registered_asns(stats_path: Path) -> "set[str]":
     """Parse the NRO delegated stats file and return the set of assigned ASNs.
 
-    Only records where type == 'asn' and status == 'assigned' are included.
-    Summary lines (where the count field is 'summary') are skipped, as are
-    header lines.
-
-    The count field is respected: an entry with start=64496 and count=10 adds
-    ASNs 64496 through 64505 inclusive.
-
     Args:
         stats_path: Path to the local NRO delegated stats file.
 
@@ -265,72 +219,25 @@ def load_registered_asns(stats_path: Path) -> "set[str]":
 
 
 # ---------------------------------------------------------------------------
-# Per-file cache helpers
+# Paths sort helper — runs inside worker processes
 # ---------------------------------------------------------------------------
 
 
-def _mk_cache_key(txt_path: Path, nro_mtime: float, filter_registered: bool) -> tuple:
-    return (txt_path.stat().st_mtime, nro_mtime, filter_registered)
+def _sort_to_file(raw_path: Path) -> Path:
+    """Sort and deduplicate a raw paths file, writing to a new temp file.
 
-
-def _load_cache(
-    txt_path: Path,
-    nro_mtime: float,
-    filter_registered: bool,
-    no_paths: bool,
-) -> "_CacheEntry | None":
-    """Load a valid cache entry for *txt_path*, or return None on any miss."""
-    meta_path = txt_path.parent / (txt_path.name + CACHE_META_EXT)
-    if not meta_path.exists():
-        return None
-    try:
-        with meta_path.open("rb") as fh:
-            entry = pickle.load(fh)
-        if not isinstance(entry, _CacheEntry) or entry.version != CACHE_VERSION:
-            return None
-        if entry.cache_key != _mk_cache_key(txt_path, nro_mtime, filter_registered):
-            return None
-        if not no_paths:
-            paths_path = txt_path.parent / (txt_path.name + CACHE_PATHS_EXT)
-            if not paths_path.exists():
-                return None
-        return entry
-    except Exception:
-        return None
-
-
-def _save_cache(txt_path: Path, entry: _CacheEntry) -> None:
-    """Write *entry* to the per-file cache sidecar (failures are non-fatal)."""
-    meta_path = txt_path.parent / (txt_path.name + CACHE_META_EXT)
-    try:
-        with meta_path.open("wb") as fh:
-            pickle.dump(entry, fh)
-    except Exception:
-        pass
-
-
-# ---------------------------------------------------------------------------
-# Sort raw paths to a sorted+deduped per-file cache file
-# ---------------------------------------------------------------------------
-
-
-def _sort_to_cache(tmp_path: Path, cache_paths: Path) -> None:
-    """Sort and deduplicate a raw paths temp file, writing to *cache_paths*.
-
-    Uses chunked in-memory sort + heapq.merge so arbitrarily large files are
-    handled without loading everything into memory at once. Deduplication is
-    done during the merge pass by comparing adjacent lines.
-
-    The output is plain (un-justified) so the same cache can serve runs with
-    and without --justify-output. Justification is applied at final merge time.
+    Uses chunked in-memory sort + heapq.merge to handle arbitrarily large
+    files without loading everything into memory at once.
 
     Args:
-        tmp_path:    Unsorted, non-deduplicated raw paths temp file.
-        cache_paths: Destination for the sorted, deduplicated paths.
+        raw_path: Unsorted, non-deduplicated raw paths file.
+
+    Returns:
+        Path to a new temp file containing sorted, deduplicated paths.
     """
     chunk_paths: list[Path] = []
     try:
-        with tmp_path.open() as fh:
+        with raw_path.open() as fh:
             while True:
                 chunk = [
                     line.rstrip("\n")
@@ -347,23 +254,29 @@ def _sort_to_cache(tmp_path: Path, cache_paths: Path) -> None:
                 cf.close()
                 chunk_paths.append(Path(cf.name))
 
+        out = tempfile.NamedTemporaryFile(
+            mode="w", suffix=".sorted", prefix="bt-sorted-", delete=False
+        )
+        out_path = Path(out.name)
+
         if not chunk_paths:
-            cache_paths.touch()
-            return
+            out.close()
+            return out_path
 
         chunk_handles = [p.open() for p in chunk_paths]
         try:
-            with cache_paths.open("w") as out_fh:
-                prev = None
-                for line in heapq.merge(*chunk_handles, key=path_sort_key):
-                    line = line.rstrip("\n")
-                    if not line or line == prev:
-                        continue
-                    out_fh.write(line + "\n")
-                    prev = line
+            prev = None
+            for line in heapq.merge(*chunk_handles, key=path_sort_key):
+                line = line.rstrip("\n")
+                if not line or line == prev:
+                    continue
+                out.write(line + "\n")
+                prev = line
         finally:
             for fh in chunk_handles:
                 fh.close()
+        out.close()
+        return out_path
     finally:
         for cp in chunk_paths:
             cp.unlink(missing_ok=True)
@@ -377,46 +290,22 @@ def _sort_to_cache(tmp_path: Path, cache_paths: Path) -> None:
 def _process_file(txt_path_str: str) -> dict:
     """Process one AS path file and return accumulated results.
 
-    Checks the per-file cache first; if valid, returns immediately without
-    re-reading the input. Otherwise processes the file, builds edges/ASN sets,
-    writes the sorted+deduped per-file paths cache, and saves the metadata
-    cache.
-
     Args:
-        txt_path_str: String path to the AS path .txt file to process.
+        txt_path_str: String path to the AS path file to process.
 
     Returns:
         Dict with keys: name, edges, asns, dropped_asns, raw_path_count,
-        paths_file (str path or None), from_cache (bool).
+        paths_file (str path to sorted temp file, or None).
     """
     txt_path = Path(txt_path_str)
-    no_paths = _W_NO_PATHS
-
-    cached = _load_cache(txt_path, _W_NRO_MTIME, _W_FILTER, no_paths)
-    if cached is not None:
-        paths_file = (
-            None
-            if no_paths
-            else str(txt_path.parent / (txt_path.name + CACHE_PATHS_EXT))
-        )
-        return {
-            "name": txt_path.name,
-            "edges": cached.edges,
-            "asns": cached.asns,
-            "dropped_asns": cached.dropped_asns,
-            "raw_path_count": cached.raw_path_count,
-            "paths_file": paths_file,
-            "from_cache": True,
-        }
-
     edges: set[tuple[str, str]] = set()
     asns: set[str] = set()
     dropped_asns: set[str] = set()
     raw_path_count = 0
-
     tmp_fh = None
     tmp_path: "Path | None" = None
-    if not no_paths:
+
+    if _W_PATHS:
         tf = tempfile.NamedTemporaryFile(
             mode="w", suffix=".rawpaths", prefix="bt-", delete=False
         )
@@ -448,29 +337,21 @@ def _process_file(txt_path_str: str) -> dict:
             tmp_fh.close()
             tmp_fh = None
 
-        paths_file = None
-        if not no_paths and tmp_path is not None:
-            cache_paths = txt_path.parent / (txt_path.name + CACHE_PATHS_EXT)
-            _sort_to_cache(tmp_path, cache_paths)
-            paths_file = str(cache_paths)
+        sorted_path: "Path | None" = None
+        if tmp_path is not None:
+            sorted_path = _sort_to_file(tmp_path)
+            tmp_path.unlink(missing_ok=True)
+            tmp_path = None
 
-        _save_cache(
-            txt_path,
-            _CacheEntry(
-                version=CACHE_VERSION,
-                cache_key=_mk_cache_key(txt_path, _W_NRO_MTIME, _W_FILTER),
-                edges=edges,
-                asns=asns,
-                dropped_asns=dropped_asns,
-                raw_path_count=raw_path_count,
-            ),
-        )
-
-    finally:
+    except Exception:
         if tmp_fh:
-            tmp_fh.close()
+            try:
+                tmp_fh.close()
+            except Exception:
+                pass
         if tmp_path is not None:
             tmp_path.unlink(missing_ok=True)
+        raise
 
     return {
         "name": txt_path.name,
@@ -478,8 +359,7 @@ def _process_file(txt_path_str: str) -> dict:
         "asns": asns,
         "dropped_asns": dropped_asns,
         "raw_path_count": raw_path_count,
-        "paths_file": paths_file,
-        "from_cache": False,
+        "paths_file": str(sorted_path) if sorted_path else None,
     }
 
 
@@ -496,12 +376,8 @@ def _merge_paths(
 ) -> int:
     """k-way merge of pre-sorted per-file path files, deduplicating globally.
 
-    Each per-file paths cache is already sorted and intra-file deduplicated.
-    This step merges them into one globally sorted, fully deduplicated output,
-    applying justification at write time.
-
     Args:
-        paths_files: List of paths to sorted per-file paths cache files.
+        paths_files: List of paths to sorted per-file paths temp files.
         out_path:    Destination file for the final merged paths.
         justify:     Whether to zero-pad ASNs in the output.
         total_hint:  Approximate line count for progress bar sizing.
@@ -556,7 +432,7 @@ def main(
     input_files: list[str] = typer.Option(
         ...,
         "--input",
-        help='Glob pattern matching AS path .txt files. Repeat to include multiple patterns.',
+        help="Glob pattern matching AS path .txt files. Repeat to include multiple patterns.",
         metavar="GLOB",
     ),
     output: Path = typer.Option(
@@ -583,12 +459,12 @@ def main(
             "Does not affect terminal output."
         ),
     ),
-    no_paths: bool = typer.Option(
+    write_paths: bool = typer.Option(
         False,
-        "--no-paths",
+        "--paths/--no-paths",
         help=(
-            "Skip building the paths output file. Speeds up runs where only the "
-            "edge list and ASN list are needed."
+            "Write a deduplicated, numerically sorted paths file ({stem}-paths.txt). "
+            "Off by default — paths files are large and expensive to produce."
         ),
     ),
     workers: int = typer.Option(
@@ -603,7 +479,7 @@ def main(
         help=(
             "Date of the RIB snapshot in YYYYMMDD format. When provided, the "
             "matching historical NRO delegated stats file is used for filtering "
-            "instead of the latest. Defaults to latest when omitted."
+            "instead of the latest."
         ),
         metavar="YYYYMMDD",
     ),
@@ -622,18 +498,16 @@ def main(
     console.print(
         f"\n[bold]Building topology from {total_files} file(s)[/bold]"
         f" — {n_workers} worker(s)"
-        + (" [dim](--no-paths)[/dim]" if no_paths else "")
+        + (" [dim](+paths)[/dim]" if write_paths else "")
     )
 
     # Load NRO filter if requested
     registered_asns: "set[str] | None" = None
-    nro_mtime = 0.0
     if filter_registered:
         input_dir = Path(matches[0]).parent
         console.print()
         nro_path = fetch_nro_stats(input_dir, date)
         registered_asns = load_registered_asns(nro_path)
-        nro_mtime = nro_path.stat().st_mtime
         console.print(
             f"  [bold]{len(registered_asns):,}[/bold] assigned ASNs loaded from NRO stats\n"
         )
@@ -646,7 +520,6 @@ def main(
     all_dropped_asns: set[str] = set()
     total_raw = 0
     paths_files: list[str] = []
-    cached_count = 0
 
     progress = Progress(
         SpinnerColumn(),
@@ -663,7 +536,7 @@ def main(
         with ProcessPoolExecutor(
             max_workers=n_workers,
             initializer=_worker_init,
-            initargs=(registered_asns, filter_registered, nro_mtime, no_paths),
+            initargs=(registered_asns, filter_registered, write_paths),
         ) as pool:
             futures = {pool.submit(_process_file, p): p for p in matches}
             for future in as_completed(futures):
@@ -679,8 +552,6 @@ def main(
                 total_raw += result["raw_path_count"]
                 if result["paths_file"]:
                     paths_files.append(result["paths_file"])
-                if result["from_cache"]:
-                    cached_count += 1
 
     output.parent.mkdir(parents=True, exist_ok=True)
 
@@ -701,15 +572,19 @@ def main(
         for asn in sorted(all_asns, key=int):
             fh.write(f"{fmt(asn, justify_output)}\n")
 
-    # Build final paths file (unless --no-paths)
+    # Build final paths file (only if --paths)
     unique_path_count: "int | None" = None
-    if not no_paths:
+    if write_paths:
         paths_path = output.parent / f"{output.stem}-paths{output.suffix}"
         console.print(f"  Merging paths → [green]{paths_path}[/green] ...")
-        unique_path_count = _merge_paths(
-            paths_files, paths_path, justify_output, total_raw
-        )
-        console.print(f"  [bold]{unique_path_count:,}[/bold] unique paths written.")
+        try:
+            unique_path_count = _merge_paths(
+                paths_files, paths_path, justify_output, total_raw
+            )
+            console.print(f"  [bold]{unique_path_count:,}[/bold] unique paths written.")
+        finally:
+            for p in paths_files:
+                Path(p).unlink(missing_ok=True)
 
     # Write dropped ASNs sidecar
     if filter_registered and all_dropped_asns:
@@ -725,7 +600,7 @@ def main(
     elapsed = time.monotonic() - start
     summary = (
         f"\n[bold]Done.[/bold]\n"
-        f"  Files processed : {total_files:,} ({cached_count:,} from cache)\n"
+        f"  Files processed : {total_files:,}\n"
         f"  AS paths read   : {total_raw:,}\n"
         f"  Unique edges    : {len(all_edges):,}\n"
         f"  Unique ASNs     : {len(all_asns):,}\n"
