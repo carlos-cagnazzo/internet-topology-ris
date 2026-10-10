@@ -15,6 +15,11 @@
 set -euo pipefail
 
 DATE="${1:?Usage: $0 YYYYMMDD [parallel_jobs]}"
+if [[ ! "$DATE" =~ ^[0-9]{8}$ ]]; then
+    echo "Error: date must be YYYYMMDD, got: '${DATE}'" >&2
+    echo "  Hint: variable assignments must come BEFORE the recipe name: just date=YYYYMMDD collect" >&2
+    exit 1
+fi
 JOBS="${2:-2}"
 FLEET="./fleet.csv"
 LOG_DIR="./logs/collect-${DATE}"
