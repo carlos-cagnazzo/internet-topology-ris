@@ -76,7 +76,7 @@ slice: (download) (process)
 
 # Collect path files from all fleet nodes into ./paths/<date>/ (reads fleet.csv)
 collect:
-    ./collect.sh {{ date }} {{ jobs }}
+    ./collect.sh '{{ date }}' {{ jobs }}
 
 # Step 3 — Build combined + per-AF topology edge lists
 topology: (topology-combined) (topology-v4) (topology-v6)

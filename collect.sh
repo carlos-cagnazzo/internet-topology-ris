@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Collect path files from fleet nodes after running 'just slice' on each.
 #
-# Usage: ./collect.sh YYYYMMDD [parallel_jobs]
-#   YYYYMMDD      — date of the snapshot (must match the slice run)
-#   parallel_jobs — max concurrent rsyncs (default 2)
+# Usage: ./collect.sh YYYYMMDD|PATTERN [parallel_jobs]
+#   YYYYMMDD or PATTERN  — exact date or glob (e.g. 202607* for all of July)
+#   parallel_jobs        — max concurrent rsyncs (default 2)
 #
 # Reads fleet.csv (repo root): username,hostname,/path/to/remote/repo
-# Rsyncs each node's paths/<date>/ into local paths/<date>/ directly.
+# Rsyncs each node's matching paths/<date>/ dirs into local paths/.
 # Collector filenames are unique (include collector name) so no conflicts.
 #
 # Requires bash 4+ for export -f.
@@ -14,16 +14,17 @@
 
 set -euo pipefail
 
-DATE="${1:?Usage: $0 YYYYMMDD [parallel_jobs]}"
-if [[ ! "$DATE" =~ ^[0-9]{8}$ ]]; then
-    echo "Error: date must be YYYYMMDD, got: '${DATE}'" >&2
+DATE="${1:?Usage: $0 YYYYMMDD|PATTERN [parallel_jobs]}"
+if [[ ! "$DATE" =~ ^[0-9]{4} ]]; then
+    echo "Error: date must start with a 4-digit year, got: '${DATE}'" >&2
+    echo "  Examples: 20260701  202607*  2026*" >&2
     echo "  Hint: variable assignments must come BEFORE the recipe name: just date=YYYYMMDD collect" >&2
     exit 1
 fi
 JOBS="${2:-2}"
 FLEET="./fleet.csv"
 LOG_DIR="./logs/collect-${DATE}"
-PATHS_DIR="./paths/${DATE}"
+PATHS_DIR="./paths"
 
 if [ ! -f "$FLEET" ]; then
     echo "Error: ${FLEET} not found." >&2
@@ -38,7 +39,10 @@ collect_host() {
     local log="${LOG_DIR}/${host}.log"
     echo "[${host}] starting → ${log}"
     if rsync -az \
-        "${user}@${host}:${repo}/paths/${DATE}/" \
+        --include="/${DATE}/" \
+        --include="/${DATE}/**" \
+        --exclude="*" \
+        "${user}@${host}:${repo}/paths/" \
         "${PATHS_DIR}/" \
         > "${log}" 2>&1; then
         echo "[${host}] done"
