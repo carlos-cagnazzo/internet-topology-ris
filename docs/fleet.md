@@ -81,13 +81,20 @@ Once all nodes have finished their slices, collect the path files from the centr
 just date=20260101 collect
 ```
 
-This runs `collect.sh`, which rsyncs each node's `paths/20260101/` directory into the local `./paths/20260101/`. Up to `jobs` rsyncs run in parallel (default 2):
+`date` accepts a glob pattern — collect all dates at once instead of looping:
 
 ```bash
-just date=20260101 jobs=4 collect
+just date='202607*' collect    # all of July 2026
+just date='2026*'   collect    # entire year
 ```
 
-Per-host logs go to `./logs/collect-20260101/<hostname>.log`. Any failed hosts are reported at the end; the exit code is non-zero if any rsync failed.
+This runs `collect.sh`, which uses rsync include/exclude filters to sync all directories matching the pattern from each node's `paths/` into the local `./paths/`. Up to `jobs` rsyncs run in parallel (default 2):
+
+```bash
+just date='202607*' jobs=4 collect
+```
+
+Per-host logs go to `./logs/collect-<date>/<hostname>.log`. Any failed hosts are reported at the end; the exit code is non-zero if any rsync failed.
 
 ---
 
@@ -123,7 +130,7 @@ zcat fetch/*/topology-????????.txt \
 
 ---
 
-## Typical three-date workflow across a fleet
+## Typical multi-date workflow across a fleet
 
 ```bash
 # On each node (different collector slice per node):
@@ -131,9 +138,11 @@ for d in 20260101 20260201 20260301; do
   just date=$d collectors=rrc00-rrc08 slice
 done
 
-# On the central machine:
+# On the central machine — collect all three dates in one pass:
+just date='202601*' jobs=4 collect
+
+# Build topology per date:
 for d in 20260101 20260201 20260301; do
-  just date=$d jobs=4 collect
   just date=$d topology
 done
 ```

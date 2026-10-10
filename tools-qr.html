@@ -365,9 +365,10 @@ header .hint {
         <span class="tool-desc">Collect path files from fleet nodes after slice runs</span>
       </div>
       <div class="flags">
-        <div class="f"><span class="v">./collect.sh</span> <span class="k req">YYYYMMDD</span> <span class="v">[parallel_jobs=2]</span> &nbsp;·&nbsp; reads <span class="v">fleet.csv</span> (copy from <span class="v">fleet.csv.example</span>)</div>
+        <div class="f"><span class="v">./collect.sh</span> <span class="k req">YYYYMMDD|PATTERN</span> <span class="v">[parallel_jobs=2]</span> &nbsp;·&nbsp; reads <span class="v">fleet.csv</span> (copy from <span class="v">fleet.csv.example</span>)</div>
+        <div class="f"><span class="v">just date='202607*' collect</span> &nbsp;·&nbsp; <span class="v">just date='2026*' collect</span> &nbsp;·&nbsp; <span class="v">just date=20260701 collect</span></div>
         <div class="note">fleet.csv lines: <code>username,hostname,/path/to/repo</code> · # comments and blank lines skipped</div>
-        <div class="note">Rsyncs each node's paths/&lt;date&gt;/ directly into local paths/&lt;date&gt;/ — no conflicts (filenames include collector name)</div>
+        <div class="note">date accepts glob patterns — collects all matching date dirs in one pass · no conflicts (filenames include collector name)</div>
         <div class="note">Logs: logs/collect-&lt;date&gt;/&lt;hostname&gt;.log · continues on failure · reports failed hosts · requires bash 4+ (macOS: brew install bash)</div>
       </div>
     </div>
@@ -397,7 +398,7 @@ header .hint {
     <div class="foot">
       <strong>just recipes</strong> — <code>just date=20240101 collectors=rrc00-rrc25 pipeline</code><br>
       <code>pipeline</code> &nbsp;<code>download</code> &nbsp;<code>download-routeviews</code> &nbsp;<code>process</code> &nbsp;<code>slice</code> &nbsp;<code>collect</code> &nbsp;<code>topology</code> &nbsp;<code>topology-v4</code> &nbsp;<code>topology-v6</code> &nbsp;<code>pack-and-publish</code> &nbsp;<code>lab</code><br>
-      <strong>Fleet:</strong> each node: <code>just date=… collectors=&lt;slice&gt; slice</code> [+ <code>topology</code>] &nbsp;·&nbsp; central: <code>just date=… [jobs=4] collect</code> then <code>just date=… topology</code>
+      <strong>Fleet:</strong> each node: <code>just date=… collectors=&lt;slice&gt; slice</code> [+ <code>topology</code>] &nbsp;·&nbsp; central: <code>just date='202607*' [jobs=4] collect</code> then <code>just date=… topology</code>
     </div>
   </div>
 
