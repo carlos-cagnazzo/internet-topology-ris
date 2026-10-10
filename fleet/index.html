@@ -779,10 +779,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#typical-three-date-workflow-across-a-fleet" class="md-nav__link">
+  <a href="#typical-multi-date-workflow-across-a-fleet" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Typical three-date workflow across a fleet
+        Typical multi-date workflow across a fleet
       
     </span>
   </a>
@@ -1127,10 +1127,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#typical-three-date-workflow-across-a-fleet" class="md-nav__link">
+  <a href="#typical-multi-date-workflow-across-a-fleet" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Typical three-date workflow across a fleet
+        Typical multi-date workflow across a fleet
       
     </span>
   </a>
@@ -1203,42 +1203,48 @@
 <p>Once all nodes have finished their slices, collect the path files from the central machine:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>just<span class="w"> </span><span class="nv">date</span><span class="o">=</span><span class="m">20260101</span><span class="w"> </span>collect
 </code></pre></div>
-<p>This runs <code>collect.sh</code>, which rsyncs each node's <code>paths/20260101/</code> directory into the local <code>./paths/20260101/</code>. Up to <code>jobs</code> rsyncs run in parallel (default 2):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>just<span class="w"> </span><span class="nv">date</span><span class="o">=</span><span class="m">20260101</span><span class="w"> </span><span class="nv">jobs</span><span class="o">=</span><span class="m">4</span><span class="w"> </span>collect
+<p><code>date</code> accepts a glob pattern — collect all dates at once instead of looping:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>just<span class="w"> </span><span class="nv">date</span><span class="o">=</span><span class="s1">&#39;202607*&#39;</span><span class="w"> </span>collect<span class="w">    </span><span class="c1"># all of July 2026</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>just<span class="w"> </span><span class="nv">date</span><span class="o">=</span><span class="s1">&#39;2026*&#39;</span><span class="w">   </span>collect<span class="w">    </span><span class="c1"># entire year</span>
 </code></pre></div>
-<p>Per-host logs go to <code>./logs/collect-20260101/&lt;hostname&gt;.log</code>. Any failed hosts are reported at the end; the exit code is non-zero if any rsync failed.</p>
+<p>This runs <code>collect.sh</code>, which uses rsync include/exclude filters to sync all directories matching the pattern from each node's <code>paths/</code> into the local <code>./paths/</code>. Up to <code>jobs</code> rsyncs run in parallel (default 2):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>just<span class="w"> </span><span class="nv">date</span><span class="o">=</span><span class="s1">&#39;202607*&#39;</span><span class="w"> </span><span class="nv">jobs</span><span class="o">=</span><span class="m">4</span><span class="w"> </span>collect
+</code></pre></div>
+<p>Per-host logs go to <code>./logs/collect-&lt;date&gt;/&lt;hostname&gt;.log</code>. Any failed hosts are reported at the end; the exit code is non-zero if any rsync failed.</p>
 <hr />
 <h2 id="building-the-global-topology">Building the global topology<a class="headerlink" href="#building-the-global-topology" title="Permanent link">&para;</a></h2>
 <p>After collecting, build the topology from all merged path files:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>just<span class="w"> </span><span class="nv">date</span><span class="o">=</span><span class="m">20260101</span><span class="w"> </span>topology
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>just<span class="w"> </span><span class="nv">date</span><span class="o">=</span><span class="m">20260101</span><span class="w"> </span>topology
 </code></pre></div>
 <hr />
 <h2 id="fetching-output-files-from-remote-machines">Fetching output files from remote machines<a class="headerlink" href="#fetching-output-files-from-remote-machines" title="Permanent link">&para;</a></h2>
 <p><code>fetch-results.sh</code> collects <strong>output</strong> files (topologies) rather than path files, using rsync into per-host subdirectories to avoid conflicts:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>./fetch-results.sh
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>./fetch-results.sh
 </code></pre></div>
 <p>Configure <code>SOURCES</code>, <code>INCLUDES</code>, and <code>EXCLUDE</code> at the top of the script. Count unique ASNs across all fetched topologies:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>zcat<span class="w"> </span>fetch/*/topology-????????.txt<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>awk<span class="w"> </span><span class="s1">&#39;{print $1; print $2}&#39;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span>-un<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>wc<span class="w"> </span>-l
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>zcat<span class="w"> </span>fetch/*/topology-????????.txt<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>awk<span class="w"> </span><span class="s1">&#39;{print $1; print $2}&#39;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span>-un<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>wc<span class="w"> </span>-l
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Legacy</p>
 <p><code>fetch-results.sh</code> predates the fleet/collect workflow and may be superseded by it for most use cases. It remains useful for ad-hoc collection without a <code>fleet.csv</code>.</p>
 </div>
 <hr />
-<h2 id="typical-three-date-workflow-across-a-fleet">Typical three-date workflow across a fleet<a class="headerlink" href="#typical-three-date-workflow-across-a-fleet" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># On each node (different collector slice per node):</span>
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="k">for</span><span class="w"> </span>d<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">20260101</span><span class="w"> </span><span class="m">20260201</span><span class="w"> </span><span class="m">20260301</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
-<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">  </span>just<span class="w"> </span><span class="nv">date</span><span class="o">=</span><span class="nv">$d</span><span class="w"> </span><span class="nv">collectors</span><span class="o">=</span>rrc00-rrc08<span class="w"> </span>slice
-<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="k">done</span>
-<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>
-<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="c1"># On the central machine:</span>
-<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="k">for</span><span class="w"> </span>d<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">20260101</span><span class="w"> </span><span class="m">20260201</span><span class="w"> </span><span class="m">20260301</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
-<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="w">  </span>just<span class="w"> </span><span class="nv">date</span><span class="o">=</span><span class="nv">$d</span><span class="w"> </span><span class="nv">jobs</span><span class="o">=</span><span class="m">4</span><span class="w"> </span>collect
-<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="w">  </span>just<span class="w"> </span><span class="nv">date</span><span class="o">=</span><span class="nv">$d</span><span class="w"> </span>topology
-<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="k">done</span>
+<h2 id="typical-multi-date-workflow-across-a-fleet">Typical multi-date workflow across a fleet<a class="headerlink" href="#typical-multi-date-workflow-across-a-fleet" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="c1"># On each node (different collector slice per node):</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="k">for</span><span class="w"> </span>d<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">20260101</span><span class="w"> </span><span class="m">20260201</span><span class="w"> </span><span class="m">20260301</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">  </span>just<span class="w"> </span><span class="nv">date</span><span class="o">=</span><span class="nv">$d</span><span class="w"> </span><span class="nv">collectors</span><span class="o">=</span>rrc00-rrc08<span class="w"> </span>slice
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="k">done</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="c1"># On the central machine — collect all three dates in one pass:</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>just<span class="w"> </span><span class="nv">date</span><span class="o">=</span><span class="s1">&#39;202601*&#39;</span><span class="w"> </span><span class="nv">jobs</span><span class="o">=</span><span class="m">4</span><span class="w"> </span>collect
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="c1"># Build topology per date:</span>
+<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="k">for</span><span class="w"> </span>d<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">20260101</span><span class="w"> </span><span class="m">20260201</span><span class="w"> </span><span class="m">20260301</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a><span class="w">  </span>just<span class="w"> </span><span class="nv">date</span><span class="o">=</span><span class="nv">$d</span><span class="w"> </span>topology
+<a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a><span class="k">done</span>
 </code></pre></div>
 
 
