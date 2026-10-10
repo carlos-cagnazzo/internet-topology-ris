@@ -28,7 +28,11 @@ just date=20240101 topology-v6
 # Fleet / distributed use
 # On each node: assign a collector slice and run download + process only
 just date=20240101 collectors=rrc00-rrc05 slice
-# Collect path files centrally (via fetch-results.sh), then:
+# Optionally on each node: build a local partial topology
+just date=20240101 topology
+# On the central machine: collect all path files, then build the global topology
+just date=20240101 collect          # reads fleet.csv, default 2 parallel rsyncs
+just date=20240101 jobs=4 collect   # override parallelism
 just date=20240101 topology
 
 # Pack and publish output products
@@ -115,12 +119,15 @@ Three scripts forming a linear pipeline, orchestrated via `justfile`:
 
 **`topology-ops.py`** — Set operations on two or more topology edge list files. Input files are positional arguments (minimum 2). `--op add` produces the union of all inputs; `--op sub` produces edges in the first file not present in any of the remaining files. Both plain and zero-padded ASN formats handled transparently (comparison is always numeric). `--justify-output` follows the same convention as other tools.
 
-**`fetch-results.sh`** — see below. The typical distributed workflow is:
-1. On each node: `just date=YYYYMMDD collectors=<slice> slice` — runs `download` + `process` for the assigned collector slice, producing path files only.
-2. Central node: `./fetch-results.sh` to rsync path files from all nodes.
-3. Central node: `just date=YYYYMMDD topology` to merge and build the final edge lists.
+**`collect.sh`** — Collects path files from all fleet nodes into the local `./paths/<date>/` directory. Reads `fleet.csv` (gitignored, copy from `fleet.csv.example`) where each line is `username,hostname,/path/to/repo`. For each host, rsyncs `<repo>/paths/<date>/` directly into `./paths/<date>/` — no filename conflicts because path files include the collector name. Runs up to N hosts in parallel (default 2). Per-host logs go to `./logs/collect-<date>/<hostname>.log`; reports all failed hosts at the end. Invoked via the `collect` just recipe. Requires bash 4+ (`export -f`); on macOS: `brew install bash`.
 
-The `slice` recipe uses the `collectors` variable for download but runs `process` against `mrt_dir/date/*.gz` and `*.bz2`, so only the files downloaded in that run are processed.
+**Distributed workflow** — typical pattern for a fleet of machines each handling a slice of collectors:
+1. On each node: `just date=YYYYMMDD collectors=<slice> slice` (download + extract paths)
+2. Optionally on each node: `just date=YYYYMMDD topology` (build a local partial topology for inspection)
+3. On the central machine: `just date=YYYYMMDD collect` (rsync all path files in)
+4. On the central machine: `just date=YYYYMMDD topology` (build the global topology from all collected paths)
+
+`fleet.csv` is gitignored; `fleet.csv.example` is tracked and serves as the template. The `jobs` justfile variable (default `2`) controls parallel rsyncs: `just date=YYYYMMDD jobs=4 collect`.
 
 **`download-routeviews-month.sh`** — Downloads one RouteViews bview per day for an entire month using the `download-routeviews` recipe. Usage: `./download-routeviews-month.sh YYYYMM [parallel_jobs]` (default 4 parallel jobs). Downloads land in `./mrt-routeviews/YYYYMMDD/`. Per-day logs go to `./logs/routeviews-YYYYMM/YYYYMMDD.log`.
 

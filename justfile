@@ -34,6 +34,7 @@ output     := "topology-" + date + ".txt"
 output_v4  := "topology-" + date + "-v4.txt"
 output_v6  := "topology-" + date + "-v6.txt"
 pubpoint   := "/var/www/html/topo"
+jobs       := "2"
 
 # List available recipes
 default:
@@ -69,6 +70,10 @@ process:
 # Fleet slice: download + process for the given collectors only (no topology step).
 # Run on each node in a distributed setup; collect path files centrally, then run topology.
 slice: (download) (process)
+
+# Collect path files from all fleet nodes into ./paths/<date>/ (reads fleet.csv)
+collect:
+    ./collect.sh {{ date }} {{ jobs }}
 
 # Step 3 — Build combined + per-AF topology edge lists
 topology: (topology-combined) (topology-v4) (topology-v6)

@@ -1,0 +1,17 @@
+# Fleet definition for the collect recipe.
+# Copy to fleet.csv (gitignored) and fill in your machines.
+# Format: username,hostname,/absolute/path/to/repo/on/that/machine
+#
+# Each host must have:
+#   - the repo cloned at the given path
+#   - SSH access via the shared key
+#   - bash 4+ (macOS: brew install bash)
+#
+# After running 'just date=YYYYMMDD collectors=<slice> slice' on each host,
+# run 'just date=YYYYMMDD collect' on the central machine to pull paths files.
+# Then run 'just date=YYYYMMDD topology' for the global edge list.
+
+# username,hostname,repo_path
+carlos,node1.example.com,/home/carlos/src/internet-topology-ris
+carlos,node2.example.com,/home/carlos/src/internet-topology-ris
+carlos,mac.local,/Users/carlos/src/internet-topology-ris
