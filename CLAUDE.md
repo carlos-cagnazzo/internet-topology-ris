@@ -20,6 +20,7 @@ just date=20240101 collectors=rrc00-rrc05,rrc11 pipeline
 just date=20240101 collectors=rrc00-rrc25 download
 just date=20240101 download-routeviews
 just date=20240101 collectors=rrc00-rrc25 ris-day   # bview + updates, replaces download+process for RIS
+just date=20240101 full-day                          # ris-day (all collectors) + routeviews + process + topology
 just date=20240101 process
 just date=20240101 topology          # combined + v4 + v6
 just date=20240101 topology-combined
@@ -61,7 +62,7 @@ Three scripts forming a linear pipeline, orchestrated via `justfile`:
 
 1. **`get-mrt.py`** — Downloads the 00:00 UTC RIB snapshot (`bview`) for a given date from one or more RIS collectors. Flags: `--collectors` (required), `--date` (required, YYYYMMDD), `--output-dir` (default `./mrt`). Skips already-downloaded files; failed transfers are counted and reported but do not abort the run. Output filenames include the collector name: `bview.rrcXX.YYYYMMDD.0000.gz`. The justfile passes `./mrt/<date>` as `--output-dir` to keep runs isolated by date. Invoked as the `download` recipe.
 
-   **`get-routeviews.py`** — same interface as `get-mrt.py` but targets the RouteViews archive. Invoked as the `download-routeviews` recipe with a fixed collector list: `route-views.amsix`, `ix-br2.gru`, `route-views2`, `route-views.sg`. No range notation (collectors don't follow a numeric sequence). Output filenames: `rib.<collector>.<date>.0000.bz2`. URL pattern: `https://archive.routeviews.org/<collector>/bgpdata/YYYY.MM/RIBS/rib.YYYYMMDD.0000.bz2`. Both `download` and `download-routeviews` are dependencies of `pipeline`.
+   **`get-routeviews.py`** — same interface as `get-mrt.py` but targets the RouteViews archive. Invoked as the `download-routeviews` recipe with a fixed collector list: `route-views.amsix`, `ix-br2.gru`, `namex.fco`, `route-views2`, `route-views.sg`, `crix.sjo`, `hkix.hkg`, `route-views.chicago`, `route-views.kixp`, `route-views.rio`, `route-views.perth`, `pacwave.lax`. No range notation (collectors don't follow a numeric sequence). Output filenames: `rib.<collector>.<date>.0000.bz2`. URL pattern: `https://archive.routeviews.org/<collector>/bgpdata/YYYY.MM/RIBS/rib.YYYYMMDD.0000.bz2`. Both `download` and `download-routeviews` are dependencies of `pipeline`.
 
    **`download-ris-day.py`** — alternative to `get-mrt.py` + `extract-paths.py` for RIS collectors. Downloads the bview AND all 288 five-minute update files for the given date, extracts paths from both (bview: `field[1]=='R'`; updates: `field[1]=='A'`, withdrawals ignored), and writes three compressed path files per collector (mirroring `extract-paths.py`):
    - `bview.<collector>.<date>.full.gz.txt` — combined paths
@@ -72,10 +73,12 @@ Three scripts forming a linear pipeline, orchestrated via `justfile`:
 
    `--collectors` accepts a comma-separated mix of individual names and ranges: `rrc00`, `rrc00,rrc04,rrc11`, `rrc00-rrc10`, `rrc00-rrc05,rrc11,rrc23`.
 
-2. **`extract-paths.py`** — Calls `bgpreader` on each `.gz` file to extract AS paths, writing three sidecar files per input to `--output-dir` (default `./paths`):
-   - `<name>.gz.txt` — all paths (combined)
-   - `<name>.gz.v4.txt` — IPv4-only paths (prefix field has no `:`)
-   - `<name>.gz.v6.txt` — IPv6-only paths (prefix field contains `:`)
+   The **`full-day`** justfile recipe ties `ris-day` + `download-routeviews` + `process` + `topology` into a single command. It runs `ris-day` sequentially across all 23 active RIS collectors (rrc00–rrc25, excluding rrc08/rrc09/rrc17) so that each collector's update files are downloaded, processed, and deleted before the next one starts — keeping disk usage bounded. Equivalent to the per-step sequence but hands-free: `just date=20240101 full-day`.
+
+2. **`extract-paths.py`** — Calls `bgpreader` on each MRT file (`.gz` or `.bz2`) to extract AS paths, writing three sidecar files per input to `--output-dir` (default `./paths`). Output filenames append `.txt`, `.v4.txt`, `.v6.txt` to the full input filename (including its `.gz`/`.bz2` extension):
+   - `<name>.gz.txt` / `<name>.bz2.txt` — all paths (combined)
+   - `<name>.gz.v4.txt` / `<name>.bz2.v4.txt` — IPv4-only paths (prefix field has no `:`)
+   - `<name>.gz.v6.txt` / `<name>.bz2.v6.txt` — IPv6-only paths (prefix field contains `:`)
 
    Address family is detected from bgpreader column 9 (prefix): presence of `:` indicates IPv6. Each path is written to the combined file and to the appropriate AF file. A file set is skipped only if all three output files already exist. The justfile passes `./paths/<date>` as `--output-dir`. bgpreader handles both `.gz` and `.bz2` inputs transparently. The justfile `process` recipe runs twice — once for `*.gz` and once for `*.bz2` — so both RIPE RIS and RouteViews files are processed automatically. If no files match a glob, the invocation prints a notice and exits cleanly.
 
@@ -120,6 +123,8 @@ Three scripts forming a linear pipeline, orchestrated via `justfile`:
 
 **`topology-ops.py`** — Set operations on two or more topology edge list files. Input files are positional arguments (minimum 2). `--op add` produces the union of all inputs; `--op sub` produces edges in the first file not present in any of the remaining files. Both plain and zero-padded ASN formats handled transparently (comparison is always numeric). `--justify-output` follows the same convention as other tools.
 
+**`download-routeviews-month.sh`** — Downloads one RouteViews bview per day for an entire month using the `download-routeviews` recipe. Usage: `./download-routeviews-month.sh YYYYMM [parallel_jobs]` (default 4 parallel jobs). Downloads land in `./mrt-routeviews/YYYYMMDD/`. Per-day logs go to `./logs/routeviews-YYYYMM/YYYYMMDD.log`.
+
 **`fetch-results.sh`** — Fetches output files from multiple remote machines running the pipeline in parallel. Rsyncs into `./fetch/<hostname>/` subdirs to avoid conflicts. Configure `SOURCES` (rsync URLs), `INCLUDES` (array of glob patterns), and `EXCLUDE` at the top. Uses `--include="*/"` to recurse into date subdirs, then applies include/exclude filters. Continues on per-host failure and reports all failed hosts at the end. Topology files are gzip-compressed; count unique ASNs across fetched files with: `zcat fetch/*/topology-????????.txt | awk '{print $1; print $2}' | sort -un | wc -l`
 
 **`lookup-as.py`** — Queries the RIPEstat Data API for one or more ASNs. Returns AS holder name, announced prefix count, last-seen timestamp, and announced status. Three input modes: `--asn <N>` (single), `--file <path>` (batch), `--file -` or implicit stdin (pipe). Batch requests run concurrently via `asyncio` + `httpx.AsyncClient`, bounded by `--concurrency` (default 10). A live progress bar is shown for batch mode. `--output` writes a TSV sidecar alongside the terminal table.
@@ -144,6 +149,8 @@ A separate directory of tools for analysing topology files as graphs. All run vi
 **`graph-analysis/annotate-topology.py`** — Enriches a topology edge list by adding four columns per edge: `cc1 rir1 cc2 rir2` (country and RIR for each ASN). Country codes are lowercase ISO 3166-1 alpha-2; RIR names follow NRO stats terminology (`ripencc`, `arin`, `lacnic`, `apnic`, `afrinic`). ASNs absent from the NRO file are annotated as `unknown unknown`. NRO stats are fetched and cached next to the input file; `--date YYYYMMDD` selects a historical snapshot. Input sort order is preserved. Flags: `--input`, `--output` (default: input stem + `-annotated.txt`), `--date`, `--justify-output`.
 
 **`graph-analysis/topology-core.py`** — Filters a topology edge list to edges where **both** endpoints have degree >= `--min-degree`. Output is a valid topology file (same two-column format, `ASN1 < ASN2`, sorted by ASN1). Degree is computed from the input file directly — no GML needed. Flags: `--input` (required), `--output` (default: input stem + `-core.txt`), `--min-degree` (required), `--wide` (adds `DEG1 DEG2` columns), `--justify-output` (zero-pad ASNs to 8 digits).
+
+**`graph-analysis/asn-presence.py`** — Builds a day-by-day ASN presence matrix from `{stem}-asns-YYYYMMDD.txt` files (produced by `build-topology.py`). One row per unique ASN, one column per date, values `0`/`1`. The first line is a header (`ASN YYYYMMDD YYYYMMDD …`). ASNs are zero-padded to 8 digits. Flags: `--input` (glob, repeatable, required), `--output` (default: directory of first matched file / `asn-presence.txt`). Load in pandas: `pd.read_csv("asn-presence.txt", sep=r"\s+", index_col=0, dtype=int)`.
 
 ## RIS Data
 

@@ -1,12 +1,12 @@
 """
-extract-paths.py — Extract AS paths from RIPE RIS MRT RIB snapshot files.
+extract-paths.py — Extract AS paths from MRT RIB snapshot files.
 
-For each .gz MRT file matched by the input glob, invokes bgpreader to parse
-the binary data and writes three sidecar files per input:
+For each MRT file (.gz or .bz2) matched by the input glob, invokes bgpreader
+to parse the binary data and writes three sidecar files per input:
 
-  <name>.gz.txt     — all paths (combined)
-  <name>.gz.v4.txt  — IPv4-only paths (prefix contains no ':')
-  <name>.gz.v6.txt  — IPv6-only paths (prefix contains ':')
+  <name>.gz.txt  / <name>.bz2.txt   — all paths (combined)
+  <name>.gz.v4.txt / <name>.bz2.v4.txt — IPv4-only paths (prefix contains no ':')
+  <name>.gz.v6.txt / <name>.bz2.v6.txt — IPv6-only paths (prefix contains ':')
 
 A file set is skipped if all three output files already exist.
 
@@ -70,7 +70,7 @@ def process_file(
     all others are IPv4.
 
     Args:
-        mrt_path: Path to the input .gz MRT RIB file.
+        mrt_path: Path to the input MRT RIB file (.gz or .bz2).
         txt_path: Path to the combined output .txt file.
         v4_path:  Path to the IPv4-only output .v4.txt file.
         v6_path:  Path to the IPv6-only output .v6.txt file.

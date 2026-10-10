@@ -249,6 +249,44 @@ uv run graph-analysis/annotate-topology.py \
 
 ---
 
+### `asn-presence.py` — Day-by-day ASN presence matrix
+
+Reads all `{stem}-asns-YYYYMMDD.txt` files matching one or more `--input` globs
+and writes a presence matrix: one row per unique ASN, one column per date,
+space-separated, values `0` or `1`. The first line is a header (`ASN` followed
+by dates in ascending order). ASNs are zero-padded to 8 digits.
+
+```
+uv run graph-analysis/asn-presence.py --input <glob> [--input <glob> ...] [OPTIONS]
+```
+
+| Flag | Default | Description |
+|---|---|---|
+| `--input` / `-i` | required (repeat) | Glob matching `*-asns-YYYYMMDD.txt` files |
+| `--output` / `-o` | first-matched-dir / `asn-presence.txt` | Output file |
+
+**Examples:**
+
+```bash
+# Presence matrix for all dates under output/
+uv run graph-analysis/asn-presence.py \
+    --input "output/*/topology-*-asns.txt"
+
+# Multiple directories
+uv run graph-analysis/asn-presence.py \
+    --input "output/2024*/topology-*-asns.txt" \
+    --input "output/2025*/topology-*-asns.txt" \
+    --output analysis/asn-presence.txt
+```
+
+**Load in pandas:**
+```python
+import pandas as pd
+df = pd.read_csv("asn-presence.txt", sep=r"\s+", index_col=0, dtype=int)
+```
+
+---
+
 ## Historic
 
 **`topology-to-gml.py`** — An earlier standalone script at the repository root that converted a topology edge list to GML with optional RIPEstat enrichment. Its functionality has been fully merged into `graph-analysis/topology-to-gml.py` (which adds gzip support, progress reporting, and integer `asn` node attributes). The original script was removed in the `v0.2.0` → `v0.3.0` development cycle.
