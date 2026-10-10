@@ -6,7 +6,7 @@
 #   parallel_jobs        — max concurrent rsyncs (default 2)
 #
 # Reads fleet.csv (repo root): username,hostname,/path/to/remote/repo
-# Rsyncs each node's matching paths/<date>/ dirs into local paths/.
+# SSHes to each node to list matching paths/<date>/ dirs, then rsyncs each.
 # Collector filenames are unique (include collector name) so no conflicts.
 #
 # Requires bash 4+ for export -f.
@@ -23,7 +23,9 @@ if [[ ! "$DATE" =~ ^[0-9]{4} ]]; then
 fi
 JOBS="${2:-2}"
 FLEET="./fleet.csv"
-LOG_DIR="./logs/collect-${DATE}"
+# Strip glob metacharacters for use in the log directory name
+LOG_DATE="${DATE//[\*\?\[\]]/}"
+LOG_DIR="./logs/collect-${LOG_DATE}"
 PATHS_DIR="./paths"
 
 if [ ! -f "$FLEET" ]; then
@@ -38,14 +40,35 @@ collect_host() {
     local user="$1" host="$2" repo="$3"
     local log="${LOG_DIR}/${host}.log"
     echo "[${host}] starting → ${log}"
-    if rsync -az \
-        --include="/${DATE}/" \
-        --include="/${DATE}/**" \
-        --exclude="*" \
-        "${user}@${host}:${repo}/paths/" \
-        "${PATHS_DIR}/" \
-        > "${log}" 2>&1; then
-        echo "[${host}] done"
+
+    # List matching date directories on the remote.
+    # The glob in ${DATE} is intentionally unquoted so the remote shell expands it.
+    local dirs
+    dirs=$(ssh "${user}@${host}" "ls -d ${repo}/paths/${DATE} 2>/dev/null" || true)
+
+    if [ -z "$dirs" ]; then
+        echo "[${host}] no directories match paths/${DATE} — skipping"
+        return 0
+    fi
+
+    local count=0 failed=0
+    while IFS= read -r remote_dir; do
+        local date_name
+        date_name=$(basename "$remote_dir")
+        mkdir -p "${PATHS_DIR}/${date_name}"
+        echo "[${host}] syncing ${date_name}..."
+        if rsync -az \
+            "${user}@${host}:${remote_dir}/" \
+            "${PATHS_DIR}/${date_name}/" \
+            >> "${log}" 2>&1; then
+            (( count++ )) || true
+        else
+            failed=1
+        fi
+    done <<< "$dirs"
+
+    if [ "$failed" -eq 0 ]; then
+        echo "[${host}] done (${count} date dir(s))"
     else
         echo "[${host}] FAILED — check ${log}"
         return 1
