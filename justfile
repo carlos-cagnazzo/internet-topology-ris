@@ -51,6 +51,9 @@ download:
         --output-dir {{ mrt_dir }}/{{ date }}
 
 # Step 1b — Download RIB snapshots from RouteViews collectors
+# This is a working subset of ~40 available collectors.
+# To add more, extend the --collectors list below.
+# Full collector index: https://www.routeviews.org/routeviews/index.php/collectors/
 download-routeviews:
     uv run get-routeviews.py \
         --collectors route-views.amsix,ix-br2.gru,namex.fco,route-views2,route-views.sg,\
