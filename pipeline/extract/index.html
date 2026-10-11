@@ -1091,7 +1091,7 @@
 </table>
 <hr />
 <h2 id="output-files">Output files<a class="headerlink" href="#output-files" title="Permanent link">&para;</a></h2>
-<p>The output filename is the <strong>full input filename</strong> (including the <code>.gz</code>/<code>.bz2</code> extension) with an additional suffix appended:</p>
+<p>The output filename strips the source extension (<code>.gz</code> or <code>.bz2</code>) and appends a new suffix:</p>
 <table>
 <thead>
 <tr>
@@ -1101,21 +1101,22 @@
 </thead>
 <tbody>
 <tr>
-<td><code>.gz.txt</code> / <code>.bz2.txt</code></td>
+<td><code>.txt.gz</code></td>
 <td>All paths (combined IPv4 + IPv6)</td>
 </tr>
 <tr>
-<td><code>.gz.v4.txt</code> / <code>.bz2.v4.txt</code></td>
+<td><code>.v4.txt.gz</code></td>
 <td>IPv4-only paths</td>
 </tr>
 <tr>
-<td><code>.gz.v6.txt</code> / <code>.bz2.v6.txt</code></td>
+<td><code>.v6.txt.gz</code></td>
 <td>IPv6-only paths</td>
 </tr>
 </tbody>
 </table>
+<p>For example: <code>bview.rrc00.20260101.0000.gz</code> → <code>bview.rrc00.20260101.0000.txt.gz</code></p>
 <p>Address family is detected from the prefix field (column 9 in bgpreader output): a colon (<code>:</code>) in the prefix indicates IPv6.</p>
-<p>Output files are <strong>gzip-compressed</strong> despite the <code>.txt</code> extension. <code>build-topology.py</code> detects this automatically via magic bytes.</p>
+<p>Output files are <strong>gzip-compressed</strong> (<code>.txt.gz</code>). <code>build-topology.py</code> detects this automatically via magic bytes.</p>
 <hr />
 <h2 id="path-cleaning-rules">Path cleaning rules<a class="headerlink" href="#path-cleaning-rules" title="Permanent link">&para;</a></h2>
 <p>Applied before writing each path:</p>
