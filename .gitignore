@@ -22,6 +22,7 @@ eda/.ipynb_checkpoints
 
 # Fleet config (contains hostnames/paths, varies per deployment)
 fleet.csv
+assignments.csv
 
 # Local scratch files
 JoseNoCarlos-RIS.txt

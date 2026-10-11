@@ -70,9 +70,17 @@ process:
         --input-files "{{ mrt_dir }}/{{ date }}/*.bz2" \
         --output-dir {{ paths_dir }}/{{ date }}
 
-# Fleet slice: download + process for the given collectors only (no topology step).
-# Run on each node in a distributed setup; collect path files centrally, then run topology.
-slice: (download) (process)
+# Fleet slice: download (RIS + RouteViews) + process for the given date and collectors.
+# Each node is self-contained: downloads both RIS and RouteViews for its assigned dates.
+slice: (download) (download-routeviews) (process)
+
+# Dispatch slice jobs to fleet nodes (reads assignments.csv + fleet.csv)
+dispatch:
+    ./dispatch.sh {{ jobs }}
+
+# Report per-date slice status for all fleet nodes
+status:
+    ./status.sh
 
 # Collect path files from all fleet nodes into ./paths/<date>/ (reads fleet.csv)
 collect:
