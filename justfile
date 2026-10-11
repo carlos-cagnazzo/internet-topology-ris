@@ -82,34 +82,52 @@ collect:
 topology: (topology-combined) (topology-v4) (topology-v6)
 
 # Step 3a — Combined topology (all prefixes)
+# date accepts a glob: just date='202607*' topology-combined
 topology-combined:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    safe="{{ date }}"; safe="${safe//[\*\?\[\]]/}"
+    date_flag=""; [[ "{{ date }}" =~ ^[0-9]{8}$ ]] && date_flag="--date {{ date }}"
+    mkdir -p "{{ output_dir }}/${safe}"
     uv run build-topology.py \
         --justify-output \
         --filter-registered \
-        --date {{ date }} \
+        $date_flag \
         --input "{{ paths_dir }}/{{ date }}/*.gz.txt" \
         --input "{{ paths_dir }}/{{ date }}/*.bz2.txt" \
-        --output {{ output_dir }}/{{ date }}/{{ output }}
+        --output "{{ output_dir }}/${safe}/topology-${safe}.txt"
 
 # Step 3b — IPv4-only topology
+# date accepts a glob: just date='202607*' topology-v4
 topology-v4:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    safe="{{ date }}"; safe="${safe//[\*\?\[\]]/}"
+    date_flag=""; [[ "{{ date }}" =~ ^[0-9]{8}$ ]] && date_flag="--date {{ date }}"
+    mkdir -p "{{ output_dir }}/${safe}"
     uv run build-topology.py \
         --justify-output \
         --filter-registered \
-        --date {{ date }} \
+        $date_flag \
         --input "{{ paths_dir }}/{{ date }}/*.gz.v4.txt" \
         --input "{{ paths_dir }}/{{ date }}/*.bz2.v4.txt" \
-        --output {{ output_dir }}/{{ date }}/{{ output_v4 }}
+        --output "{{ output_dir }}/${safe}/topology-${safe}-v4.txt"
 
 # Step 3c — IPv6-only topology
+# date accepts a glob: just date='202607*' topology-v6
 topology-v6:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    safe="{{ date }}"; safe="${safe//[\*\?\[\]]/}"
+    date_flag=""; [[ "{{ date }}" =~ ^[0-9]{8}$ ]] && date_flag="--date {{ date }}"
+    mkdir -p "{{ output_dir }}/${safe}"
     uv run build-topology.py \
         --justify-output \
         --filter-registered \
-        --date {{ date }} \
+        $date_flag \
         --input "{{ paths_dir }}/{{ date }}/*.gz.v6.txt" \
         --input "{{ paths_dir }}/{{ date }}/*.bz2.v6.txt" \
-        --output {{ output_dir }}/{{ date }}/{{ output_v6 }}
+        --output "{{ output_dir }}/${safe}/topology-${safe}-v6.txt"
 
 # Start JupyterLab bound to the Tailscale interface
 lab2:
