@@ -36,6 +36,8 @@ fi
 
 mkdir -p "$LOG_DIR" "$PATHS_DIR"
 
+SSH_OPTS="-o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=30"
+
 collect_host() {
     local user="$1" host="$2" repo="$3"
     local log="${LOG_DIR}/${host}.log"
@@ -44,7 +46,7 @@ collect_host() {
     # List matching date directories on the remote.
     # The glob in ${DATE} is intentionally unquoted so the remote shell expands it.
     local dirs
-    dirs=$(ssh "${user}@${host}" "ls -d ${repo}/paths/${DATE} 2>/dev/null" || true)
+    dirs=$(ssh $SSH_OPTS "${user}@${host}" "ls -d ${repo}/paths/${DATE} 2>/dev/null" || true)
 
     if [ -z "$dirs" ]; then
         echo "[${host}] no directories match paths/${DATE} — skipping"
@@ -58,6 +60,7 @@ collect_host() {
         mkdir -p "${PATHS_DIR}/${date_name}"
         echo "[${host}] syncing ${date_name}..."
         if rsync -az --ignore-existing \
+            -e "ssh $SSH_OPTS" \
             "${user}@${host}:${remote_dir}/" \
             "${PATHS_DIR}/${date_name}/" \
             >> "${log}" 2>&1; then
@@ -76,7 +79,7 @@ collect_host() {
 }
 
 export -f collect_host
-export LOG_DIR DATE PATHS_DIR
+export LOG_DIR DATE PATHS_DIR SSH_OPTS
 
 # Read CSV — skip blank lines and lines starting with #
 entries=()
