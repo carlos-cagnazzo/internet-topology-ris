@@ -121,6 +121,28 @@ bgpreader -d singlefile -o rib-file=<path>
 
 ---
 
+## CAIDA AS Relationships
+
+CAIDA publishes monthly AS relationship inferences derived from BGP data. The tool `get-caida-peers.py` uses these to extract peer-to-peer (p2p) edges.
+
+| | URL |
+|---|---|
+| Serial-2 index | `https://publicdata.caida.org/datasets/as-relationships/serial-2/` |
+| Serial-1 index | `https://publicdata.caida.org/datasets/as-relationships/serial-1/` |
+
+File format (`|`-delimited, lines starting with `#` are comments):
+
+```
+AS1|AS2|rel          # serial-1
+AS1|AS2|rel|source   # serial-2
+```
+
+Relationship codes: `0` = peer-to-peer, `-1` = provider→customer. Only `rel=0` is extracted.
+
+Downloaded `.bz2` files are cached in `./caida-cache/` (gitignored). Serial-2 is preferred; serial-1 is used as fallback for pre-2012 months.
+
+---
+
 ## .gitignore summary
 
 The following are gitignored and must not be committed:
@@ -129,8 +151,9 @@ The following are gitignored and must not be committed:
 |---|---|
 | `mrt/` | Downloaded MRT files (large binary data) |
 | `paths/` | Extracted AS path files (large) |
-| `topology*.txt` | Generated output files |
+| `output-combined/` | Generated topology and peer output files |
+| `caida-cache/` | Cached CAIDA `.bz2` downloads |
+| `topology*.txt` | Any topology edge list at repo root |
 | `nro-delegated-stats*` | Cached NRO stats |
 | `fleet.csv` | Deployment-specific; copy from `fleet.csv.example` |
 | `fetch/` | Rsync staging from `fetch-results.sh` |
-| `output/` | *(not gitignored by default — add if needed)* |

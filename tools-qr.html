@@ -318,8 +318,8 @@ header .hint {
         <span class="tool-desc">Extract AS paths from MRT files via bgpreader</span>
       </div>
       <div class="flags">
-        <div class="f"><span class="k req">--input-files</span> <span class="v">"mrt/20240101/*.gz"</span> &nbsp;<span class="k">--output-dir</span> <span class="v">./paths</span></div>
-        <div class="note">Accepts .gz and .bz2 · outputs &lt;name&gt;.gz.txt (all), .gz.v4.txt (IPv4), .gz.v6.txt (IPv6) · skips complete sets</div>
+        <div class="f"><span class="k req">--input-files</span> <span class="v">"mrt/20240101/*.gz"</span> &nbsp;<span class="k">--output-dir</span> <span class="v">./paths/20240101</span></div>
+        <div class="note">Accepts .gz and .bz2 · writes paths/&lt;date&gt;/combined/*.txt.gz, v4/*.v4.txt.gz, v6/*.v6.txt.gz · skips complete sets</div>
       </div>
     </div>
 
@@ -337,6 +337,19 @@ header .hint {
         <div class="f"><span class="k">--keep-edges</span> (retain .edges + .paths.gz checkpoint sidecars after merge)</div>
         <div class="note">Default outputs: topology.txt, -asns.txt &nbsp;·&nbsp; with <code>--paths</code>: also -paths.txt · sidecars in <code>paths/&lt;date&gt;/combined/</code>: &lt;name&gt;.edges, &lt;name&gt;.paths.gz</div>
         <div class="note">with <code>--filter-registered</code>: also -dropped-asns.txt &nbsp;·&nbsp; just: <code>just paths=1 topology-combined</code></div>
+      </div>
+    </div>
+
+    <div class="tool">
+      <div class="tool-head">
+        <span class="tool-name">get-caida-peers.py</span>
+        <span class="tool-desc">Extract peer-to-peer edges from CAIDA AS relationships dataset</span>
+      </div>
+      <div class="flags">
+        <div class="f"><span class="k req">--date</span> <span class="v">YYYYMM</span> &nbsp;<span class="k">--output</span> <span class="v">output-combined/YYYYMM/caida-peers-YYYYMM.txt</span></div>
+        <div class="f"><span class="k">--justify-output</span> / <span class="k">--no-justify-output</span> (default: on) &nbsp;<span class="k">--cache-dir</span> <span class="v">./caida-cache</span></div>
+        <div class="note">Prefers serial-2; falls back to serial-1 (pre-2012) · discovers filename from CAIDA index · caches .bz2 permanently</div>
+        <div class="note">just: <code>just date=202401 caida-peers</code> &nbsp;·&nbsp; <code>just date=202401 no_justify=1 caida-peers</code></div>
       </div>
     </div>
 
@@ -424,7 +437,7 @@ header .hint {
 
     <div class="foot">
       <strong>just recipes</strong> — <code>just date=20240101 collectors=rrc00-rrc25 pipeline</code><br>
-      <code>pipeline</code> &nbsp;<code>download</code> &nbsp;<code>download-routeviews</code> &nbsp;<code>process</code> &nbsp;<code>slice</code> &nbsp;<code>dispatch</code> &nbsp;<code>status</code> &nbsp;<code>collect</code> &nbsp;<code>topology</code> &nbsp;<code>topology-v4</code> &nbsp;<code>topology-v6</code> &nbsp;<code>pack-and-publish</code> &nbsp;<code>lab</code><br>
+      <code>pipeline</code> &nbsp;<code>download</code> &nbsp;<code>download-routeviews</code> &nbsp;<code>process</code> &nbsp;<code>slice</code> &nbsp;<code>dispatch</code> &nbsp;<code>status</code> &nbsp;<code>collect</code> &nbsp;<code>topology</code> &nbsp;<code>topology-v4</code> &nbsp;<code>topology-v6</code> &nbsp;<code>caida-peers</code> &nbsp;<code>pack-and-publish</code> &nbsp;<code>lab</code><br>
       <strong>Fleet:</strong> edit <code>assignments.csv</code> → <code>just dispatch</code> → nodes run <code>slice</code> in tmux &nbsp;·&nbsp; monitor: <code>just status</code> &nbsp;·&nbsp; collect: <code>just date='202607*' [jobs=4] collect</code> &nbsp;·&nbsp; build: <code>just date='202607*' [workers=N] [paths=1] topology</code>
     </div>
   </div>

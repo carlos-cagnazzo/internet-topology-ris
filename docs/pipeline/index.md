@@ -31,6 +31,7 @@ get-routeviews.py   ──┘
 | `dispatch` | dispatch slice jobs to all fleet nodes via `assignments.csv` + `fleet.csv` |
 | `status` | report per-date progress for all assigned fleet nodes |
 | `collect` | rsync path files from all fleet nodes |
+| `caida-peers` | `get-caida-peers.py` for the given month |
 | `pack-and-publish` | tar + copy to a publish point |
 
 ## Justfile variables
@@ -48,6 +49,7 @@ get-routeviews.py   ──┘
 | `jobs` | `2` | Parallel connections for `collect` and `dispatch`. |
 | `workers` | *(empty)* | Worker count for `build-topology.py` (topology recipes). Omit for `cpu_count`. Set low (e.g. `2`) to avoid OOM on large datasets. |
 | `paths` | *(empty)* | Set to any non-empty value (e.g. `1`) to write a consolidated paths file from `topology-combined`. Checkpoint/resume aware (`.paths.gz` sidecars). |
+| `no_justify` | *(empty)* | Set to any non-empty value (e.g. `1`) to disable zero-padding in `caida-peers`. |
 | `pubpoint` | `/var/www/html/topo` | Destination for `pack-and-publish`. |
 
 ---
@@ -57,3 +59,4 @@ get-routeviews.py   ──┘
 - [Download](download.md) — `get-mrt.py` and `get-routeviews.py`
 - [Extract Paths](extract.md) — `extract-paths.py`
 - [Build Topology](topology.md) — `build-topology.py`
+- [CAIDA Peers](caida-peers.md) — `get-caida-peers.py`

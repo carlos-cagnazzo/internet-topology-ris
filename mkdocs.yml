@@ -57,6 +57,7 @@ nav:
     - Download: pipeline/download.md
     - Extract Paths: pipeline/extract.md
     - Build Topology: pipeline/topology.md
+    - CAIDA Peers: pipeline/caida-peers.md
   - Fleet Workflow: fleet.md
   - Graph Analysis:
     - Overview: graph-analysis/index.md
