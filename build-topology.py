@@ -354,6 +354,9 @@ def _process_file(txt_path_str: str) -> dict:
 # ---------------------------------------------------------------------------
 
 
+_PROGRESS_ADVANCE_EVERY = 50_000  # throttle Rich lock contention in tight merge loops
+
+
 def _merge_sorted_files_into(
     files: list[str],
     out_path: Path,
@@ -367,6 +370,7 @@ def _merge_sorted_files_into(
     """
     handles = [open(p) for p in files]
     count = 0
+    raw_count = 0
     progress = Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
@@ -377,12 +381,17 @@ def _merge_sorted_files_into(
     )
     try:
         with progress:
-            task = progress.add_task(desc, total=total_hint)
+            # total=None → indeterminate bar; time elapsed always ticks correctly.
+            task = progress.add_task(desc, total=None)
             with out_path.open("w") as out_fh:
                 prev = None
                 for line in heapq.merge(*handles, key=path_sort_key):
                     line = line.rstrip("\n")
-                    progress.advance(task)
+                    raw_count += 1
+                    # Throttle: advancing on every line starves the Rich render
+                    # thread (it holds the lock), making the elapsed clock freeze.
+                    if raw_count % _PROGRESS_ADVANCE_EVERY == 0:
+                        progress.advance(task, _PROGRESS_ADVANCE_EVERY)
                     if not line or line == prev:
                         continue
                     if justify:
@@ -393,6 +402,7 @@ def _merge_sorted_files_into(
                         out_fh.write(line + "\n")
                     prev = line
                     count += 1
+            progress.advance(task, raw_count % _PROGRESS_ADVANCE_EVERY)
     finally:
         for fh in handles:
             fh.close()
