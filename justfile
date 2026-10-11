@@ -35,6 +35,7 @@ output_v4  := "topology-" + date + "-v4.txt"
 output_v6  := "topology-" + date + "-v6.txt"
 pubpoint   := "/var/www/html/topo"
 jobs       := "2"
+workers    := ""
 
 # List available recipes
 default:
@@ -91,48 +92,54 @@ topology: (topology-combined) (topology-v4) (topology-v6)
 
 # Step 3a — Combined topology (all prefixes)
 # date accepts a glob: just date='202607*' topology-combined
+# workers controls parallelism/memory: just workers=2 topology-combined
 topology-combined:
     #!/usr/bin/env bash
     set -euo pipefail
     safe="{{ date }}"; safe="${safe//[\*\?\[\]]/}"
-    date_flag=""; [[ "{{ date }}" =~ ^[0-9]{8}$ ]] && date_flag="--date {{ date }}"
+    date_flag="";    [[ "{{ date }}"    =~ ^[0-9]{8}$ ]] && date_flag="--date {{ date }}"
+    workers_flag=""; [[ -n "{{ workers }}" ]]             && workers_flag="--workers {{ workers }}"
     mkdir -p "{{ output_dir }}/${safe}"
     uv run build-topology.py \
         --justify-output \
         --filter-registered \
-        $date_flag \
+        $date_flag $workers_flag \
         --input "{{ paths_dir }}/{{ date }}/*.gz.txt" \
         --input "{{ paths_dir }}/{{ date }}/*.bz2.txt" \
         --output "{{ output_dir }}/${safe}/topology-${safe}.txt"
 
 # Step 3b — IPv4-only topology
 # date accepts a glob: just date='202607*' topology-v4
+# workers controls parallelism/memory: just workers=2 topology-v4
 topology-v4:
     #!/usr/bin/env bash
     set -euo pipefail
     safe="{{ date }}"; safe="${safe//[\*\?\[\]]/}"
-    date_flag=""; [[ "{{ date }}" =~ ^[0-9]{8}$ ]] && date_flag="--date {{ date }}"
+    date_flag="";    [[ "{{ date }}"    =~ ^[0-9]{8}$ ]] && date_flag="--date {{ date }}"
+    workers_flag=""; [[ -n "{{ workers }}" ]]             && workers_flag="--workers {{ workers }}"
     mkdir -p "{{ output_dir }}/${safe}"
     uv run build-topology.py \
         --justify-output \
         --filter-registered \
-        $date_flag \
+        $date_flag $workers_flag \
         --input "{{ paths_dir }}/{{ date }}/*.gz.v4.txt" \
         --input "{{ paths_dir }}/{{ date }}/*.bz2.v4.txt" \
         --output "{{ output_dir }}/${safe}/topology-${safe}-v4.txt"
 
 # Step 3c — IPv6-only topology
 # date accepts a glob: just date='202607*' topology-v6
+# workers controls parallelism/memory: just workers=2 topology-v6
 topology-v6:
     #!/usr/bin/env bash
     set -euo pipefail
     safe="{{ date }}"; safe="${safe//[\*\?\[\]]/}"
-    date_flag=""; [[ "{{ date }}" =~ ^[0-9]{8}$ ]] && date_flag="--date {{ date }}"
+    date_flag="";    [[ "{{ date }}"    =~ ^[0-9]{8}$ ]] && date_flag="--date {{ date }}"
+    workers_flag=""; [[ -n "{{ workers }}" ]]             && workers_flag="--workers {{ workers }}"
     mkdir -p "{{ output_dir }}/${safe}"
     uv run build-topology.py \
         --justify-output \
         --filter-registered \
-        $date_flag \
+        $date_flag $workers_flag \
         --input "{{ paths_dir }}/{{ date }}/*.gz.v6.txt" \
         --input "{{ paths_dir }}/{{ date }}/*.bz2.v6.txt" \
         --output "{{ output_dir }}/${safe}/topology-${safe}-v6.txt"
