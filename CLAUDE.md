@@ -132,6 +132,8 @@ Index URLs:
 
 ## Helper Tools
 
+**`path-transit-freq.py`** — Counts how often each ASN appears as a transit hop across all paths in a path file. For each path, strips the first ASN (route collector sensor) and last ASN (origin AS); deduplicates the remaining intermediates per path (collapsing prepends); increments a counter for each unique intermediate. Paths with ≤2 ASNs are skipped and counted. Output is sorted by frequency descending: `ASN freq`. Flags: `--input` (required, `.txt` or `.txt.gz`), `--output` (default: `<stem>-transit-freq.txt` next to input), `--justify-output/--no-justify-output` (default on).
+
 **`topology-ops.py`** — Set operations on two or more topology edge list files. Input files are positional arguments (minimum 2). `--op add` produces the union of all inputs; `--op sub` produces edges in the first file not present in any of the remaining files. Both plain and zero-padded ASN formats handled transparently (comparison is always numeric). `--justify-output` follows the same convention as other tools.
 
 **`collect.sh`** — Collects path files from all fleet nodes into the local `./paths/<date>/` directory. Reads `fleet.csv` (gitignored, copy from `fleet.csv.example`) where each line is `username,hostname,/path/to/repo`. For each host, rsyncs `<repo>/paths/<date>/` directly into `./paths/<date>/` — no filename conflicts because path files include the collector name. Runs up to N hosts in parallel (default 2). Per-host logs go to `./logs/collect-<date>/<hostname>.log`; reports all failed hosts at the end. Invoked via the `collect` just recipe. Requires bash 4+ (`export -f`); on macOS: `brew install bash`.

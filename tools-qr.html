@@ -355,6 +355,18 @@ header .hint {
 
     <div class="tool">
       <div class="tool-head">
+        <span class="tool-name">path-transit-freq.py</span>
+        <span class="tool-desc">Count transit AS frequency across a path file</span>
+      </div>
+      <div class="flags">
+        <div class="f"><span class="k req">--input</span> <span class="v">paths.txt[.gz]</span> &nbsp;<span class="k">--output</span> <span class="v">&lt;stem&gt;-transit-freq.txt</span> &nbsp;<span class="k">--justify-output</span></div>
+        <div class="note">Strips first (sensor) + last (origin) ASN per path · deduplicates intermediates per path (collapses prepends) · sorted by freq descending</div>
+        <div class="note">Skips paths with ≤2 ASes · reports skipped count at end</div>
+      </div>
+    </div>
+
+    <div class="tool">
+      <div class="tool-head">
         <span class="tool-name">topology-ops.py</span>
         <span class="tool-desc">Set operations on topology edge list files</span>
       </div>
