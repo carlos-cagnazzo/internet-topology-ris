@@ -57,7 +57,7 @@ collect_host() {
         date_name=$(basename "$remote_dir")
         mkdir -p "${PATHS_DIR}/${date_name}"
         echo "[${host}] syncing ${date_name}..."
-        if rsync -az \
+        if rsync -az --ignore-existing \
             "${user}@${host}:${remote_dir}/" \
             "${PATHS_DIR}/${date_name}/" \
             >> "${log}" 2>&1; then
