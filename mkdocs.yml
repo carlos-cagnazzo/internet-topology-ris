@@ -51,6 +51,7 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Quick Start: quickstart.md
+  - Installation: install.md
   - Pipeline:
     - Overview: pipeline/index.md
     - Download: pipeline/download.md
