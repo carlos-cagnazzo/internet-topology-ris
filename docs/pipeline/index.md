@@ -7,10 +7,10 @@ get-mrt.py          ──┐
                        ├──▶  extract-paths.py  ──▶  build-topology.py
 get-routeviews.py   ──┘
 
-./mrt/<date>/       ──▶  ./paths/<date>/       ──▶  ./output/<date>/
-  *.gz (RIS)              *.txt.gz
-  *.bz2 (RouteViews)      *.v4.txt.gz
-                          *.v6.txt.gz
+./mrt/<date>/       ──▶  ./paths/<date>/            ──▶  ./output-combined/<date>/
+  *.gz (RIS)              combined/*.txt.gz
+  *.bz2 (RouteViews)      v4/*.v4.txt.gz
+                          v6/*.v6.txt.gz
 ```
 
 ---
@@ -41,7 +41,7 @@ get-routeviews.py   ──┘
 | `collectors` | `rrc00` | RIS collector spec — individual, list, or range (e.g. `rrc00-rrc25`). |
 | `mrt_dir` | `./mrt` | Root for downloaded MRT files. Date subdir created automatically. |
 | `paths_dir` | `./paths` | Root for extracted path files. Date subdir created automatically. |
-| `output_dir` | `./output` | Root for topology output. Date subdir created automatically. |
+| `output_dir` | `./output-combined` | Root for topology output. Date subdir created automatically. |
 | `output` | `topology-<date>.txt` | Combined output filename. |
 | `output_v4` | `topology-<date>-v4.txt` | IPv4 output filename. |
 | `output_v6` | `topology-<date>-v6.txt` | IPv6 output filename. |

@@ -76,14 +76,14 @@ Three scripts forming a linear pipeline, orchestrated via `justfile`:
 
    **Note:** both RIS and RouteViews use bview-only (00:00 UTC RIB snapshot). Intraday update files are not collected.
 
-2. **`extract-paths.py`** — Calls `bgpreader` on each MRT file (`.gz` or `.bz2`) to extract AS paths, writing three sidecar files per input to `--output-dir` (default `./paths`). Output filenames strip the source extension (`.gz`/`.bz2`) and append `.txt.gz`, `.v4.txt.gz`, `.v6.txt.gz`:
-   - `<stem>.txt.gz` — all paths (combined)
-   - `<stem>.v4.txt.gz` — IPv4-only paths (prefix field has no `:`)
-   - `<stem>.v6.txt.gz` — IPv6-only paths (prefix field contains `:`)
+2. **`extract-paths.py`** — Calls `bgpreader` on each MRT file (`.gz` or `.bz2`) to extract AS paths, writing three sidecar files per input into address-family subdirectories under `--output-dir` (default `./paths`). Output filenames strip the source extension (`.gz`/`.bz2`) and append a suffix:
+   - `combined/<stem>.txt.gz` — all paths (combined)
+   - `v4/<stem>.v4.txt.gz` — IPv4-only paths (prefix field has no `:`)
+   - `v6/<stem>.v6.txt.gz` — IPv6-only paths (prefix field contains `:`)
 
    Address family is detected from bgpreader column 9 (prefix): presence of `:` indicates IPv6. Each path is written to the combined file and to the appropriate AF file. A file set is skipped only if all three output files already exist. The justfile passes `./paths/<date>` as `--output-dir`. bgpreader handles both `.gz` and `.bz2` inputs transparently. The justfile `process` recipe runs twice — once for `*.gz` and once for `*.bz2` — so both RIPE RIS and RouteViews files are processed automatically. If no files match a glob, the invocation prints a notice and exits cleanly.
 
-3. **`build-topology.py`** — Reads `.txt.gz` path files (via `--input` glob, repeatable), extracts edges, and writes output files to the directory of `--output` (default `./topology.txt`). The justfile passes a single `*.txt.gz` glob covering both RIS and RouteViews files seamlessly. Always produces two files:
+3. **`build-topology.py`** — Reads `.txt.gz` path files (via `--input` glob, repeatable), extracts edges, and writes output files to the directory of `--output` (default `./topology.txt`). The justfile passes `paths/<date>/combined/*.txt.gz` for combined topology and per-AF globs for v4/v6. All topology output goes to `./output-combined/<date>/`. Always produces two files:
    - `{stem}.txt` — deduplicated undirected edge list, one `AS1 AS2` per line, sorted numerically
    - `{stem}-asns.txt` — sorted list of all unique ASNs present in the topology
 
@@ -106,7 +106,7 @@ Three scripts forming a linear pipeline, orchestrated via `justfile`:
 - `bview` files are the RIB snapshot type used by RIS.
 - Output data files (`topology*.txt`, `nro-delegated-stats`) are excluded from version control via `.gitignore`.
 - **`DATA-README.md`** — template for the human-readable README included in every published archive. Uses `{date}` as a placeholder; `pack-and-publish` substitutes the actual date via `sed` before archiving.
-- **`pack-and-publish`** just recipe — packs `./output/{date}/` into `topology-{date}.tar.bz2`, injects the substituted `DATA-README.md` as `README.md`, prompts before overwriting at destination, then `sudo cp`s to `pubpoint` (default `/var/www/html/topo`). Standalone — does not depend on `topology`.
+- **`pack-and-publish`** just recipe — packs `./output-combined/{date}/` into `topology-{date}.tar.bz2`, injects the substituted `DATA-README.md` as `README.md`, prompts before overwriting at destination, then `sudo cp`s to `pubpoint` (default `/var/www/html/topo`). Standalone — does not depend on `topology`.
 
 ## NRO Delegated Stats
 

@@ -29,7 +29,7 @@ collectors := "rrc00"
 date       := ""
 mrt_dir    := "./mrt"
 paths_dir  := "./paths"
-output_dir := "./output"
+output_dir := "./output-combined"
 output     := "topology-" + date + ".txt"
 output_v4  := "topology-" + date + "-v4.txt"
 output_v6  := "topology-" + date + "-v6.txt"
@@ -107,7 +107,7 @@ topology-combined:
         --justify-output \
         --filter-registered \
         $date_flag $workers_flag $paths_flag \
-        --input "{{ paths_dir }}/{{ date }}/*.txt.gz" \
+        --input "{{ paths_dir }}/{{ date }}/combined/*.txt.gz" \
         --output "{{ output_dir }}/${safe}/topology-${safe}.txt"
 
 # Step 3b — IPv4-only topology
@@ -124,7 +124,7 @@ topology-v4:
         --justify-output \
         --filter-registered \
         $date_flag $workers_flag \
-        --input "{{ paths_dir }}/{{ date }}/*.v4.txt.gz" \
+        --input "{{ paths_dir }}/{{ date }}/v4/*.v4.txt.gz" \
         --output "{{ output_dir }}/${safe}/topology-${safe}-v4.txt"
 
 # Step 3c — IPv6-only topology
@@ -141,7 +141,7 @@ topology-v6:
         --justify-output \
         --filter-registered \
         $date_flag $workers_flag \
-        --input "{{ paths_dir }}/{{ date }}/*.v6.txt.gz" \
+        --input "{{ paths_dir }}/{{ date }}/v6/*.v6.txt.gz" \
         --output "{{ output_dir }}/${safe}/topology-${safe}-v6.txt"
 
 # Remove .edges and .paths.gz checkpoint sidecars left by an interrupted topology build
@@ -149,13 +149,13 @@ topology-v6:
 clean-edges:
     #!/usr/bin/env bash
     set -euo pipefail
-    count=$(find "{{ paths_dir }}/{{ date }}" \( -name "*.edges" -o -name "*.paths.gz" \) 2>/dev/null | wc -l | tr -d ' ')
+    count=$(find "{{ paths_dir }}/{{ date }}/combined" \( -name "*.edges" -o -name "*.paths.gz" \) 2>/dev/null | wc -l | tr -d ' ')
     if [ "$count" -eq 0 ]; then
-        echo "No .edges / .paths.gz sidecar files found under {{ paths_dir }}/{{ date }}"
+        echo "No .edges / .paths.gz sidecar files found under {{ paths_dir }}/{{ date }}/combined"
         exit 0
     fi
-    echo "Deleting ${count} checkpoint sidecar(s) under {{ paths_dir }}/{{ date }} ..."
-    find "{{ paths_dir }}/{{ date }}" \( -name "*.edges" -o -name "*.paths.gz" \) -delete
+    echo "Deleting ${count} checkpoint sidecar(s) under {{ paths_dir }}/{{ date }}/combined ..."
+    find "{{ paths_dir }}/{{ date }}/combined" \( -name "*.edges" -o -name "*.paths.gz" \) -delete
     echo "Done."
 
 # Start JupyterLab bound to the Tailscale interface

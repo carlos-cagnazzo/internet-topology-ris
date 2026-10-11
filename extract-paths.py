@@ -2,13 +2,15 @@
 extract-paths.py — Extract AS paths from MRT RIB snapshot files.
 
 For each MRT file (.gz or .bz2) matched by the input glob, invokes bgpreader
-to parse the binary data and writes three sidecar files per input:
+to parse the binary data and writes three sidecar files per input into
+address-family subdirectories under --output-dir:
 
-  <stem>.txt.gz    — all paths (combined)
-  <stem>.v4.txt.gz — IPv4-only paths (prefix contains no ':')
-  <stem>.v6.txt.gz — IPv6-only paths (prefix contains ':')
+  combined/<stem>.txt.gz    — all paths (combined)
+  v4/<stem>.v4.txt.gz       — IPv4-only paths (prefix contains no ':')
+  v6/<stem>.v6.txt.gz       — IPv6-only paths (prefix contains ':')
 
-A file set is skipped if all three output files already exist.
+The subdirectories are created automatically. A file set is skipped if all
+three output files already exist.
 
 AS path cleaning applied before writing:
   - Consecutive duplicate ASNs (BGP prepending) are collapsed.
@@ -138,14 +140,18 @@ def main(
         console.print(f"[dim]No files matched: {input_files} — skipping.[/dim]")
         raise typer.Exit(0)
 
-    output_dir.mkdir(parents=True, exist_ok=True)
+    dir_combined = output_dir / "combined"
+    dir_v4       = output_dir / "v4"
+    dir_v6       = output_dir / "v6"
+    for d in (dir_combined, dir_v4, dir_v6):
+        d.mkdir(parents=True, exist_ok=True)
 
     files = [
         (
             Path(m),
-            output_dir / (Path(m).stem + ".txt.gz"),
-            output_dir / (Path(m).stem + ".v4.txt.gz"),
-            output_dir / (Path(m).stem + ".v6.txt.gz"),
+            dir_combined / (Path(m).stem + ".txt.gz"),
+            dir_v4       / (Path(m).stem + ".v4.txt.gz"),
+            dir_v6       / (Path(m).stem + ".v6.txt.gz"),
         )
         for m in matches
     ]

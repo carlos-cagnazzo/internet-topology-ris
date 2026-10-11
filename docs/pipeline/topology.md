@@ -103,16 +103,16 @@ just date='202607*' topology
 ```bash
 # Combined topology from a single date (RIS + RouteViews)
 uv run build-topology.py \
-  --input "./paths/20260101/*.txt.gz" \
-  --output ./output/20260101/topology-20260101.txt \
+  --input "./paths/20260101/combined/*.txt.gz" \
+  --output ./output-combined/20260101/topology-20260101.txt \
   --filter-registered \
   --justify-output \
   --date 20260101
 
 # Also write the path list, use 8 workers
 uv run build-topology.py \
-  --input "./paths/20260101/*.txt.gz" \
-  --output ./output/20260101/topology-20260101.txt \
+  --input "./paths/20260101/combined/*.txt.gz" \
+  --output ./output-combined/20260101/topology-20260101.txt \
   --paths \
   --workers 8
 ```

@@ -331,11 +331,11 @@ header .hint {
         <span class="tool-desc">Build deduplicated undirected edge list from AS path files</span>
       </div>
       <div class="flags">
-        <div class="f"><span class="k req">--input</span> <span class="v">"paths/*.txt.gz"</span> (repeatable) &nbsp;<span class="k">--output</span> <span class="v">topology.txt</span></div>
+        <div class="f"><span class="k req">--input</span> <span class="v">"paths/&lt;date&gt;/combined/*.txt.gz"</span> (repeatable) &nbsp;<span class="k">--output</span> <span class="v">topology.txt</span></div>
         <div class="f"><span class="k">--filter-registered</span> (drop unregistered ASNs via NRO stats) &nbsp;<span class="k">--date</span> <span class="v">YYYYMMDD</span></div>
         <div class="f"><span class="k">--justify-output</span> (zero-pad to 8 digits) &nbsp;<span class="k">--paths</span> (opt-in consolidated path file) &nbsp;<span class="k">--workers</span> <span class="v">N</span></div>
         <div class="f"><span class="k">--keep-edges</span> (retain .edges + .paths.gz checkpoint sidecars after merge)</div>
-        <div class="note">Default outputs: topology.txt, -asns.txt &nbsp;·&nbsp; with <code>--paths</code>: also -paths.txt · sidecars: &lt;name&gt;.edges, &lt;name&gt;.paths.gz</div>
+        <div class="note">Default outputs: topology.txt, -asns.txt &nbsp;·&nbsp; with <code>--paths</code>: also -paths.txt · sidecars in <code>paths/&lt;date&gt;/combined/</code>: &lt;name&gt;.edges, &lt;name&gt;.paths.gz</div>
         <div class="note">with <code>--filter-registered</code>: also -dropped-asns.txt &nbsp;·&nbsp; just: <code>just paths=1 topology-combined</code></div>
       </div>
     </div>
