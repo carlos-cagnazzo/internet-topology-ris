@@ -1,9 +1,13 @@
 """
 get-caida-peers.py — Download and extract peer-to-peer AS relationships from CAIDA.
 
-Fetches the CAIDA AS relationships dataset for a given year-month, extracts
-peer-to-peer edges (relationship code 0), deduplicates, sorts, and writes a
-two-column edge list.
+Fetches the CAIDA AS relationships dataset for a given year-month and produces
+two output files:
+
+  caida-peers-YYYYMM.txt  — peer-to-peer edges (rel=0), deduplicated and sorted
+  caida-tier1-YYYYMM.txt  — potential Tier 1 ASNs: those that provide transit
+                             to others (appear as provider in rel=-1) but never
+                             buy transit themselves (never appear as customer)
 
 Dataset preference: serial-2 is tried first; serial-1 is used as fallback
 for months not covered by serial-2 (roughly pre-2012).
@@ -81,9 +85,20 @@ def _download(url: str, dest: Path) -> None:
         tmp.rename(dest)
 
 
-def _parse_peers(path: Path) -> set[tuple[int, int]]:
-    """Decompress and parse *path*, returning peer-to-peer edges as integer tuples."""
-    edges: set[tuple[int, int]] = set()
+def _parse_relationships(
+    path: Path,
+) -> tuple[set[tuple[int, int]], set[int]]:
+    """Decompress and parse *path* in one pass.
+
+    Returns:
+        peer_edges  — set of (min, max) integer tuples for rel=0 lines
+        tier1       — ASNs that provide transit (rel=-1, AS1 role) but never
+                      buy it (never appear as AS2 in a rel=-1 line)
+    """
+    peer_edges: set[tuple[int, int]] = set()
+    providers: set[int] = set()   # AS1 in a rel=-1 line (sells transit)
+    customers: set[int] = set()   # AS2 in a rel=-1 line (buys transit)
+
     with bz2.open(path, "rt") as fh:
         for line in fh:
             line = line.rstrip("\n")
@@ -92,14 +107,18 @@ def _parse_peers(path: Path) -> set[tuple[int, int]]:
             fields = line.split("|")
             if len(fields) < 3:
                 continue
-            if fields[2] != "0":
-                continue
             try:
-                a, b = int(fields[0]), int(fields[1])
+                a, b, rel = int(fields[0]), int(fields[1]), fields[2]
             except ValueError:
                 continue
-            edges.add((a, b) if a < b else (b, a))
-    return edges
+            if rel == "0":
+                peer_edges.add((a, b) if a < b else (b, a))
+            elif rel == "-1":
+                providers.add(a)
+                customers.add(b)
+
+    tier1 = providers - customers
+    return peer_edges, tier1
 
 
 @app.command()
@@ -137,6 +156,7 @@ def main(
 
     if output is None:
         output = Path("./output-combined") / date / f"caida-peers-{date}.txt"
+    tier1_output = output.parent / f"caida-tier1-{date}.txt"
 
     start = time.monotonic()
 
@@ -151,7 +171,7 @@ def main(
         _download(url, cached)
 
     console.print(f"Parsing [bold]{filename}[/bold] …")
-    edges = _parse_peers(cached)
+    edges, tier1 = _parse_relationships(cached)
 
     console.print(f"Sorting {len(edges):,} peer pairs …")
     sorted_edges = sorted(edges)
@@ -164,10 +184,15 @@ def main(
             else:
                 fh.write(f"{a} {b}\n")
 
+    with tier1_output.open("w") as fh:
+        for asn in sorted(tier1):
+            fh.write(f"{str(asn).zfill(ASN_FIELD_WIDTH)}\n" if justify_output else f"{asn}\n")
+
     elapsed = time.monotonic() - start
     console.print(
         f"\n[bold]Done.[/bold] {len(edges):,} peer pairs → [green]{output}[/green]"
-        f" — {elapsed:.1f}s elapsed"
+        f"\n        {len(tier1):,} potential Tier 1 ASNs  → [green]{tier1_output}[/green]"
+        f"\n        {elapsed:.1f}s elapsed"
     )
 
 

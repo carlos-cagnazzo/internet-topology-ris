@@ -49,9 +49,18 @@ Downloaded `.bz2` files are cached permanently in `--cache-dir` (default `./caid
 
 ---
 
-## Output
+## Output files
 
-Output goes to `./output-combined/YYYYMM/caida-peers-YYYYMM.txt` by default. Format matches the BGP topology edge list: one undirected edge per line, smaller ASN first, sorted numerically.
+Two files are always written to the same directory:
+
+| File | Contents |
+|---|---|
+| `caida-peers-YYYYMM.txt` | Peer-to-peer edge list (rel=0) |
+| `caida-tier1-YYYYMM.txt` | Potential Tier 1 ASNs — one ASN per line |
+
+### Peer edge list
+
+One undirected edge per line, smaller ASN first, sorted numerically:
 
 ```
 00000001 00005467
@@ -59,13 +68,20 @@ Output goes to `./output-combined/YYYYMM/caida-peers-YYYYMM.txt` by default. For
 00001299 00003356
 ```
 
-Plain integers (no zero-padding) with `--no-justify-output`:
+### Potential Tier 1 list
+
+ASNs that provide transit to others (appear as provider in a rel=-1 relationship) but never buy transit themselves (never appear as customer). These are **provider-free transit networks** — the operational definition of Tier 1.
 
 ```
-1 5467
-1 8641
-1299 3356
+00000174
+00000701
+00001299
+00003356
 ```
+
+The list typically contains ~100–200 ASNs: the ~20 globally recognised Tier 1 networks plus regional/national networks that are provider-free in their own market. Networks that are widely considered Tier 1 but appear as a customer in at least one CAIDA-inferred relationship (e.g. Hurricane Electric, AS6939) will be absent.
+
+Plain integers (no zero-padding) with `--no-justify-output`.
 
 ---
 

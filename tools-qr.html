@@ -348,6 +348,7 @@ header .hint {
       <div class="flags">
         <div class="f"><span class="k req">--date</span> <span class="v">YYYYMM</span> &nbsp;<span class="k">--output</span> <span class="v">output-combined/YYYYMM/caida-peers-YYYYMM.txt</span></div>
         <div class="f"><span class="k">--justify-output</span> / <span class="k">--no-justify-output</span> (default: on) &nbsp;<span class="k">--cache-dir</span> <span class="v">./caida-cache</span></div>
+        <div class="note">Always writes two files: <code>caida-peers-YYYYMM.txt</code> (rel=0 edges) + <code>caida-tier1-YYYYMM.txt</code> (provider-free ASNs, ~100–200)</div>
         <div class="note">Prefers serial-2; falls back to serial-1 (pre-2012) · discovers filename from CAIDA index · caches .bz2 permanently</div>
         <div class="note">just: <code>just date=202401 caida-peers</code> &nbsp;·&nbsp; <code>just date=202401 no_justify=1 caida-peers</code></div>
       </div>

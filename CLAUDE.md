@@ -117,7 +117,9 @@ Three scripts forming a linear pipeline, orchestrated via `justfile`:
 
 ## CAIDA AS Relationships
 
-**`get-caida-peers.py`** — Downloads the CAIDA AS relationships dataset for a given month and extracts peer-to-peer edges (`rel=0`). Prefers serial-2; falls back to serial-1 for months not covered by serial-2 (~pre-2012). Discovers the correct filename by fetching the directory index (files are not always named with the 1st of the month). Caches downloaded `.bz2` files permanently in `./caida-cache/` — CAIDA files are immutable once published. Output: `output-combined/YYYYMM/caida-peers-YYYYMM.txt`.
+**`get-caida-peers.py`** — Downloads the CAIDA AS relationships dataset for a given month and produces two output files. Prefers serial-2; falls back to serial-1 for months not covered by serial-2 (~pre-2012). Discovers the correct filename by fetching the directory index. Caches downloaded `.bz2` files permanently in `./caida-cache/`. Always writes both:
+- `output-combined/YYYYMM/caida-peers-YYYYMM.txt` — peer-to-peer edges (`rel=0`)
+- `output-combined/YYYYMM/caida-tier1-YYYYMM.txt` — potential Tier 1 ASNs: provider-free transit networks (appear as provider in `rel=-1` but never as customer). Typically 100–200 ASNs.
 
 - `--date YYYYMM` — required
 - `--output PATH` — override default output path
