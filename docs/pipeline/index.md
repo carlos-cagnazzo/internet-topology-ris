@@ -8,12 +8,9 @@ get-mrt.py          ──┐
 get-routeviews.py   ──┘
 
 ./mrt/<date>/       ──▶  ./paths/<date>/       ──▶  ./output/<date>/
-  *.gz (RIS)              *.gz.txt
-  *.bz2 (RouteViews)      *.gz.v4.txt
-                          *.gz.v6.txt
-                          *.bz2.txt
-                          *.bz2.v4.txt
-                          *.bz2.v6.txt
+  *.gz (RIS)              *.txt.gz
+  *.bz2 (RouteViews)      *.v4.txt.gz
+                          *.v6.txt.gz
 ```
 
 ---

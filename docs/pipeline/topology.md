@@ -84,18 +84,9 @@ just date=20260101 topology-v6
 ## Examples
 
 ```bash
-# Combined topology from a single date, RIS only
+# Combined topology from a single date (RIS + RouteViews)
 uv run build-topology.py \
-  --input "./paths/20260101/*.gz.txt" \
-  --output ./output/20260101/topology-20260101.txt \
-  --filter-registered \
-  --justify-output \
-  --date 20260101
-
-# Merge RIS and RouteViews
-uv run build-topology.py \
-  --input "./paths/20260101/*.gz.txt" \
-  --input "./paths/20260101/*.bz2.txt" \
+  --input "./paths/20260101/*.txt.gz" \
   --output ./output/20260101/topology-20260101.txt \
   --filter-registered \
   --justify-output \
@@ -103,7 +94,7 @@ uv run build-topology.py \
 
 # Also write the path list, use 8 workers
 uv run build-topology.py \
-  --input "./paths/20260101/*.gz.txt" \
+  --input "./paths/20260101/*.txt.gz" \
   --output ./output/20260101/topology-20260101.txt \
   --paths \
   --workers 8

@@ -76,14 +76,14 @@ Three scripts forming a linear pipeline, orchestrated via `justfile`:
 
    **Note:** both RIS and RouteViews use bview-only (00:00 UTC RIB snapshot). Intraday update files are not collected.
 
-2. **`extract-paths.py`** — Calls `bgpreader` on each MRT file (`.gz` or `.bz2`) to extract AS paths, writing three sidecar files per input to `--output-dir` (default `./paths`). Output filenames append `.txt`, `.v4.txt`, `.v6.txt` to the full input filename (including its `.gz`/`.bz2` extension):
-   - `<name>.gz.txt` / `<name>.bz2.txt` — all paths (combined)
-   - `<name>.gz.v4.txt` / `<name>.bz2.v4.txt` — IPv4-only paths (prefix field has no `:`)
-   - `<name>.gz.v6.txt` / `<name>.bz2.v6.txt` — IPv6-only paths (prefix field contains `:`)
+2. **`extract-paths.py`** — Calls `bgpreader` on each MRT file (`.gz` or `.bz2`) to extract AS paths, writing three sidecar files per input to `--output-dir` (default `./paths`). Output filenames strip the source extension (`.gz`/`.bz2`) and append `.txt.gz`, `.v4.txt.gz`, `.v6.txt.gz`:
+   - `<stem>.txt.gz` — all paths (combined)
+   - `<stem>.v4.txt.gz` — IPv4-only paths (prefix field has no `:`)
+   - `<stem>.v6.txt.gz` — IPv6-only paths (prefix field contains `:`)
 
    Address family is detected from bgpreader column 9 (prefix): presence of `:` indicates IPv6. Each path is written to the combined file and to the appropriate AF file. A file set is skipped only if all three output files already exist. The justfile passes `./paths/<date>` as `--output-dir`. bgpreader handles both `.gz` and `.bz2` inputs transparently. The justfile `process` recipe runs twice — once for `*.gz` and once for `*.bz2` — so both RIPE RIS and RouteViews files are processed automatically. If no files match a glob, the invocation prints a notice and exits cleanly.
 
-3. **`build-topology.py`** — Reads `.txt` path files (via `--input` glob, repeatable), extracts edges, and writes output files to the directory of `--output` (default `./topology.txt`). The justfile runs it three times, passing both `*.gz.*` and `*.bz2.*` globs so RIS and RouteViews files are merged seamlessly. Always produces two files:
+3. **`build-topology.py`** — Reads `.txt.gz` path files (via `--input` glob, repeatable), extracts edges, and writes output files to the directory of `--output` (default `./topology.txt`). The justfile passes a single `*.txt.gz` glob covering both RIS and RouteViews files seamlessly. Always produces two files:
    - `{stem}.txt` — deduplicated undirected edge list, one `AS1 AS2` per line, sorted numerically
    - `{stem}-asns.txt` — sorted list of all unique ASNs present in the topology
 
@@ -97,7 +97,7 @@ Three scripts forming a linear pipeline, orchestrated via `justfile`:
 ## Conventions
 
 - All scripts: measure and display total execution time on exit; show progress when processing multiple files; include inline docstrings and rich `--help` output.
-- **Path files are gzip-compressed** (`compresslevel=1`). `extract-paths.py` writes compressed output despite the `.txt` extension. `build-topology.py` detects compression via the `\x1f\x8b` magic bytes and opens files with `gzip.open()` transparently — plain text files are also still accepted.
+- **Path files are gzip-compressed** (`compresslevel=1`). `extract-paths.py` writes gzip output with a `.txt.gz` extension. `build-topology.py` detects compression via the `\x1f\x8b` magic bytes and opens files with `gzip.open()` transparently — plain text files are also still accepted.
 - `--collectors` is mandatory with no default.
 - AS path processing rules (applied in `extract-paths.py`):
   - Collapse consecutive duplicate ASNs before extracting edges (remove prepending): `A A B C` → `A B C`.

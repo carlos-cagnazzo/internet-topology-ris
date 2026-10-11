@@ -189,9 +189,9 @@ Three variants are produced per input MRT file:
 
 | Suffix | Contents |
 |---|---|
-| `.gz.txt` | All paths (IPv4 + IPv6 combined) |
-| `.gz.v4.txt` | IPv4-only paths (prefix contained no `:`) |
-| `.gz.v6.txt` | IPv6-only paths (prefix contained `:`) |
+| `.txt.gz` | All paths (IPv4 + IPv6 combined) |
+| `.v4.txt.gz` | IPv4-only paths (prefix contained no `:`) |
+| `.v6.txt.gz` | IPv6-only paths (prefix contained `:`) |
 
 Example lines:
 ```

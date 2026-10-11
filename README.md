@@ -142,9 +142,9 @@ uv run extract-paths.py --input-files <glob> [--output-dir <dir>]
 
 | File | Description |
 |---|---|
-| `<name>.gz.txt` | All paths (combined, IPv4 + IPv6) |
-| `<name>.gz.v4.txt` | IPv4-only paths |
-| `<name>.gz.v6.txt` | IPv6-only paths |
+| `<stem>.txt.gz` | All paths (combined, IPv4 + IPv6) |
+| `<stem>.v4.txt.gz` | IPv4-only paths |
+| `<stem>.v6.txt.gz` | IPv6-only paths |
 
 **Example:**
 ```bash
@@ -199,11 +199,11 @@ Zero-pads all ASN numbers to 8 digits in every output file, making them fixed-wi
 **Examples:**
 ```bash
 # Combined topology
-uv run build-topology.py --input "./paths/*.gz.txt" --output ./output/topology.txt
+uv run build-topology.py --input "./paths/*.txt.gz" --output ./output/topology.txt
 
 # With filtering and zero-padding
 uv run build-topology.py \
-  --input "./paths/*.gz.txt" \
+  --input "./paths/*.txt.gz" \
   --output ./output/20251201/topology-20251201.txt \
   --filter-registered \
   --justify-output
@@ -260,19 +260,19 @@ uv run extract-paths.py \
 
 # 3. Build topology (run once per address family)
 uv run build-topology.py \
-  --input "./paths/20251201/*.gz.txt" \
+  --input "./paths/20251201/*.txt.gz" \
   --output ./output/20251201/topology-20251201.txt \
   --filter-registered \
   --justify-output
 
 uv run build-topology.py \
-  --input "./paths/20251201/*.gz.v4.txt" \
+  --input "./paths/20251201/*.v4.txt.gz" \
   --output ./output/20251201/topology-20251201-v4.txt \
   --filter-registered \
   --justify-output
 
 uv run build-topology.py \
-  --input "./paths/20251201/*.gz.v6.txt" \
+  --input "./paths/20251201/*.v6.txt.gz" \
   --output ./output/20251201/topology-20251201-v6.txt \
   --filter-registered \
   --justify-output

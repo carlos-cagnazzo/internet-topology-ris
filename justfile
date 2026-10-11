@@ -104,8 +104,7 @@ topology-combined:
         --justify-output \
         --filter-registered \
         $date_flag $workers_flag \
-        --input "{{ paths_dir }}/{{ date }}/*.gz.txt" \
-        --input "{{ paths_dir }}/{{ date }}/*.bz2.txt" \
+        --input "{{ paths_dir }}/{{ date }}/*.txt.gz" \
         --output "{{ output_dir }}/${safe}/topology-${safe}.txt"
 
 # Step 3b — IPv4-only topology
@@ -122,8 +121,7 @@ topology-v4:
         --justify-output \
         --filter-registered \
         $date_flag $workers_flag \
-        --input "{{ paths_dir }}/{{ date }}/*.gz.v4.txt" \
-        --input "{{ paths_dir }}/{{ date }}/*.bz2.v4.txt" \
+        --input "{{ paths_dir }}/{{ date }}/*.v4.txt.gz" \
         --output "{{ output_dir }}/${safe}/topology-${safe}-v4.txt"
 
 # Step 3c — IPv6-only topology
@@ -140,8 +138,7 @@ topology-v6:
         --justify-output \
         --filter-registered \
         $date_flag $workers_flag \
-        --input "{{ paths_dir }}/{{ date }}/*.gz.v6.txt" \
-        --input "{{ paths_dir }}/{{ date }}/*.bz2.v6.txt" \
+        --input "{{ paths_dir }}/{{ date }}/*.v6.txt.gz" \
         --output "{{ output_dir }}/${safe}/topology-${safe}-v6.txt"
 
 # Remove .edges checkpoint sidecars left by an interrupted topology build

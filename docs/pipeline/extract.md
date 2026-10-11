@@ -15,17 +15,19 @@ uv run extract-paths.py --input-files <glob> [--output-dir <dir>]
 
 ## Output files
 
-The output filename is the **full input filename** (including the `.gz`/`.bz2` extension) with an additional suffix appended:
+The output filename strips the source extension (`.gz` or `.bz2`) and appends a new suffix:
 
 | Suffix | Contents |
 |---|---|
-| `.gz.txt` / `.bz2.txt` | All paths (combined IPv4 + IPv6) |
-| `.gz.v4.txt` / `.bz2.v4.txt` | IPv4-only paths |
-| `.gz.v6.txt` / `.bz2.v6.txt` | IPv6-only paths |
+| `.txt.gz` | All paths (combined IPv4 + IPv6) |
+| `.v4.txt.gz` | IPv4-only paths |
+| `.v6.txt.gz` | IPv6-only paths |
+
+For example: `bview.rrc00.20260101.0000.gz` → `bview.rrc00.20260101.0000.txt.gz`
 
 Address family is detected from the prefix field (column 9 in bgpreader output): a colon (`:`) in the prefix indicates IPv6.
 
-Output files are **gzip-compressed** despite the `.txt` extension. `build-topology.py` detects this automatically via magic bytes.
+Output files are **gzip-compressed** (`.txt.gz`). `build-topology.py` detects this automatically via magic bytes.
 
 ---
 
