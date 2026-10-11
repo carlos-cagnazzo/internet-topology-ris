@@ -1054,7 +1054,15 @@
 </tr>
 <tr>
 <td><code>slice</code></td>
-<td><code>download</code> + <code>process</code> only (for fleet nodes)</td>
+<td><code>download</code> + <code>download-routeviews</code> + <code>process</code> (self-contained, for fleet nodes)</td>
+</tr>
+<tr>
+<td><code>dispatch</code></td>
+<td>dispatch slice jobs to all fleet nodes via <code>assignments.csv</code> + <code>fleet.csv</code></td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td>report per-date progress for all assigned fleet nodes</td>
 </tr>
 <tr>
 <td><code>collect</code></td>
@@ -1119,7 +1127,12 @@
 <tr>
 <td><code>jobs</code></td>
 <td><code>2</code></td>
-<td>Parallel rsync jobs for <code>collect</code>.</td>
+<td>Parallel connections for <code>collect</code> and <code>dispatch</code>.</td>
+</tr>
+<tr>
+<td><code>workers</code></td>
+<td><em>(empty)</em></td>
+<td>Worker count for <code>build-topology.py</code> (topology recipes). Omit for <code>cpu_count</code>. Set low (e.g. <code>2</code>) to avoid OOM on large datasets.</td>
 </tr>
 <tr>
 <td><code>pubpoint</code></td>
