@@ -79,6 +79,7 @@ NRO_CACHE_FILENAME_DATED = "nro-delegated-stats-{date}"
 NRO_MAX_AGE_SECONDS = 24 * 3600
 ASN_FIELD_WIDTH = 8
 SORT_CHUNK_LINES = 500_000
+MERGE_FD_BATCH = 200  # max files open in one merge pass (well under OS default of 1024)
 
 
 # ---------------------------------------------------------------------------
@@ -349,28 +350,22 @@ def _process_file(txt_path_str: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# k-way merge of pre-sorted per-file edge sidecars
+# Merge helpers
 # ---------------------------------------------------------------------------
 
 
-def _merge_edges(
-    edges_files: list[str],
+def _merge_sorted_files_into(
+    files: list[str],
     out_path: Path,
     justify: bool,
+    desc: str,
     total_hint: int,
 ) -> int:
-    """k-way merge of per-file sorted edge sidecar files, deduplicating globally.
+    """Single-pass k-way merge of pre-sorted files into out_path.
 
-    Args:
-        edges_files: Paths to per-file sorted .edges sidecar files.
-        out_path:    Destination for the final deduplicated edge list.
-        justify:     Whether to zero-pad ASNs in the output.
-        total_hint:  Approximate line count for progress bar sizing.
-
-    Returns:
-        Number of unique edges written.
+    len(files) must be <= MERGE_FD_BATCH to stay under the OS fd limit.
     """
-    handles = [open(p) for p in edges_files]
+    handles = [open(p) for p in files]
     count = 0
     progress = Progress(
         SpinnerColumn(),
@@ -382,7 +377,7 @@ def _merge_edges(
     )
     try:
         with progress:
-            task = progress.add_task("  Merging & deduplicating edges", total=total_hint)
+            task = progress.add_task(desc, total=total_hint)
             with out_path.open("w") as out_fh:
                 prev = None
                 for line in heapq.merge(*handles, key=path_sort_key):
@@ -391,8 +386,9 @@ def _merge_edges(
                     if not line or line == prev:
                         continue
                     if justify:
-                        a, b = line.split()
-                        out_fh.write(f"{fmt(a, True)} {fmt(b, True)}\n")
+                        out_fh.write(
+                            " ".join(fmt(t, True) for t in line.split()) + "\n"
+                        )
                     else:
                         out_fh.write(line + "\n")
                     prev = line
@@ -403,9 +399,64 @@ def _merge_edges(
     return count
 
 
-# ---------------------------------------------------------------------------
-# Final k-way merge of pre-sorted per-file paths
-# ---------------------------------------------------------------------------
+def _batched_merge(
+    input_files: list[str],
+    out_path: Path,
+    justify: bool,
+    label: str,
+    total_hint: int,
+) -> int:
+    """k-way merge with automatic batching when file count exceeds MERGE_FD_BATCH.
+
+    Splits input_files into batches, merges each batch to a temp file, then
+    merges the temp files into the final output. Uses at most two passes.
+    """
+    if len(input_files) <= MERGE_FD_BATCH:
+        return _merge_sorted_files_into(
+            input_files, out_path, justify, f"  {label}", total_hint
+        )
+
+    batches = [
+        input_files[i : i + MERGE_FD_BATCH]
+        for i in range(0, len(input_files), MERGE_FD_BATCH)
+    ]
+    console.print(
+        f"  [dim]{len(input_files):,} files — batching into"
+        f" {len(batches)} groups of ≤{MERGE_FD_BATCH}[/dim]"
+    )
+    temp_merged: list[str] = []
+    try:
+        for i, batch in enumerate(batches, 1):
+            tf = tempfile.NamedTemporaryFile(
+                suffix=".merged", prefix="bt-merge-", delete=False
+            )
+            tf.close()
+            _merge_sorted_files_into(
+                batch,
+                Path(tf.name),
+                False,  # justify only on the final pass
+                f"  {label} batch {i}/{len(batches)}",
+                total_hint // len(batches),
+            )
+            temp_merged.append(tf.name)
+        return _merge_sorted_files_into(
+            temp_merged, out_path, justify, f"  {label} final merge", total_hint
+        )
+    finally:
+        for p in temp_merged:
+            Path(p).unlink(missing_ok=True)
+
+
+def _merge_edges(
+    edges_files: list[str],
+    out_path: Path,
+    justify: bool,
+    total_hint: int,
+) -> int:
+    """k-way merge of per-file sorted .edges sidecars, deduplicating globally."""
+    return _batched_merge(
+        edges_files, out_path, justify, "Merging & deduplicating edges", total_hint
+    )
 
 
 def _merge_paths(
@@ -418,38 +469,9 @@ def _merge_paths(
     if not paths_files:
         out_path.touch()
         return 0
-
-    handles = [open(p) for p in paths_files]
-    count = 0
-    progress = Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        BarColumn(),
-        MofNColumn(),
-        TimeElapsedColumn(),
-        console=console,
+    return _batched_merge(
+        paths_files, out_path, justify, "Merging & deduplicating paths", total_hint
     )
-    try:
-        with progress:
-            task = progress.add_task(
-                "  Merging & deduplicating paths", total=total_hint
-            )
-            with out_path.open("w") as out_fh:
-                prev = None
-                for line in heapq.merge(*handles, key=path_sort_key):
-                    line = line.rstrip("\n")
-                    progress.advance(task)
-                    if not line or line == prev:
-                        continue
-                    out_fh.write(
-                        " ".join(fmt(t, justify) for t in line.split()) + "\n"
-                    )
-                    prev = line
-                    count += 1
-    finally:
-        for fh in handles:
-            fh.close()
-    return count
 
 
 # ---------------------------------------------------------------------------
