@@ -361,6 +361,31 @@ header .hint {
 
     <div class="tool">
       <div class="tool-head">
+        <span class="tool-name">dispatch.sh</span>
+        <span class="tool-desc">Dispatch slice jobs to fleet nodes via tmux (fire-and-forget)</span>
+      </div>
+      <div class="flags">
+        <div class="f"><span class="v">./dispatch.sh</span> <span class="v">[parallel_jobs=2]</span> &nbsp;·&nbsp; <span class="v">just dispatch</span> &nbsp;·&nbsp; <span class="v">just jobs=4 dispatch</span></div>
+        <div class="note">Reads <code>assignments.csv</code> (copy from <code>assignments.csv.example</code>): <code>hostname,start_date,end_date,collectors</code></div>
+        <div class="note">One line = one tmux session named <code>slice-START-END</code> · multiple lines per host = parallel sessions · idempotent (skips existing sessions)</div>
+        <div class="note">Each session loops through its date range running <code>just date=$d slice</code> · requires fleet.csv, python3, tmux on all nodes</div>
+      </div>
+    </div>
+
+    <div class="tool">
+      <div class="tool-head">
+        <span class="tool-name">status.sh</span>
+        <span class="tool-desc">Report per-date slice progress for all fleet nodes in assignments.csv</span>
+      </div>
+      <div class="flags">
+        <div class="f"><span class="v">./status.sh</span> &nbsp;·&nbsp; <span class="v">just status</span></div>
+        <div class="note">SSHes once per host · checks running tmux sessions + existing <code>paths/</code> dirs · shows ✓/· grid per date (7 per row)</div>
+        <div class="note">Status labels: <code>running</code> / <code>done</code> / <code>partial</code> (some dates done, session gone) / <code>pending</code></div>
+      </div>
+    </div>
+
+    <div class="tool">
+      <div class="tool-head">
         <span class="tool-name">collect.sh</span>
         <span class="tool-desc">Collect path files from fleet nodes after slice runs</span>
       </div>
@@ -368,7 +393,7 @@ header .hint {
         <div class="f"><span class="v">./collect.sh</span> <span class="k req">YYYYMMDD|PATTERN</span> <span class="v">[parallel_jobs=2]</span> &nbsp;·&nbsp; reads <span class="v">fleet.csv</span> (copy from <span class="v">fleet.csv.example</span>)</div>
         <div class="f"><span class="v">just date='202607*' collect</span> &nbsp;·&nbsp; <span class="v">just date='2026*' collect</span> &nbsp;·&nbsp; <span class="v">just date=20260701 collect</span></div>
         <div class="note">fleet.csv lines: <code>username,hostname,/path/to/repo</code> · # comments and blank lines skipped</div>
-        <div class="note">date accepts glob patterns — collects all matching date dirs in one pass · no conflicts (filenames include collector name)</div>
+        <div class="note">date accepts glob patterns — collects all matching date dirs in one pass · local files skipped (<code>--ignore-existing</code>)</div>
         <div class="note">Logs: logs/collect-&lt;date&gt;/&lt;hostname&gt;.log · continues on failure · reports failed hosts · requires bash 4+ (macOS: brew install bash)</div>
       </div>
     </div>
@@ -397,8 +422,8 @@ header .hint {
 
     <div class="foot">
       <strong>just recipes</strong> — <code>just date=20240101 collectors=rrc00-rrc25 pipeline</code><br>
-      <code>pipeline</code> &nbsp;<code>download</code> &nbsp;<code>download-routeviews</code> &nbsp;<code>process</code> &nbsp;<code>slice</code> &nbsp;<code>collect</code> &nbsp;<code>topology</code> &nbsp;<code>topology-v4</code> &nbsp;<code>topology-v6</code> &nbsp;<code>pack-and-publish</code> &nbsp;<code>lab</code><br>
-      <strong>Fleet:</strong> each node: <code>just date=… collectors=&lt;slice&gt; slice</code> [+ <code>topology</code>] &nbsp;·&nbsp; central: <code>just date='202607*' [jobs=4] collect</code> then <code>just date=… topology</code>
+      <code>pipeline</code> &nbsp;<code>download</code> &nbsp;<code>download-routeviews</code> &nbsp;<code>process</code> &nbsp;<code>slice</code> &nbsp;<code>dispatch</code> &nbsp;<code>status</code> &nbsp;<code>collect</code> &nbsp;<code>topology</code> &nbsp;<code>topology-v4</code> &nbsp;<code>topology-v6</code> &nbsp;<code>pack-and-publish</code> &nbsp;<code>lab</code><br>
+      <strong>Fleet:</strong> edit <code>assignments.csv</code> → <code>just dispatch</code> → nodes run <code>slice</code> in tmux &nbsp;·&nbsp; monitor: <code>just status</code> &nbsp;·&nbsp; collect: <code>just date='202607*' [jobs=4] collect</code> &nbsp;·&nbsp; build: <code>just date='202607*' [workers=N] topology</code>
     </div>
   </div>
 

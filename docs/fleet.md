@@ -1,23 +1,24 @@
 # Fleet Workflow
 
-Processing a full day of data (all RIS collectors + RouteViews) can take several hours on a single machine. The fleet workflow distributes the download and extraction steps across multiple machines, then merges the results centrally.
+Processing a full day of data (all RIS collectors + RouteViews) can take several hours on a single machine. The fleet workflow distributes download and extraction across multiple machines, then merges the results centrally.
 
 ---
 
 ## Overview
 
 ```
-Node A: just date=YYYYMMDD collectors=rrc00-rrc08 slice
-Node B: just date=YYYYMMDD collectors=rrc09-rrc17 slice
-Node C: just date=YYYYMMDD collectors=rrc18-rrc25 slice
+Central: just dispatch
+  → Node A: tmux slice-20260701-20260715  (rrc00-rrc12, serially)
+  → Node B: tmux slice-20260716-20260731  (rrc13-rrc25, serially)
+  → Node B: tmux slice-20260801-20260815  (rrc13-rrc25, serially)  ← parallel session
 
-Central: just date=YYYYMMDD collect
-Central: just date=YYYYMMDD topology
+Central: just status            # check progress at any time
+
+Central: just date='202607*' collect
+Central: just date='202607*' topology
 ```
 
-The `slice` recipe runs `download` + `process` only — no topology is built on the node. Path files are named after their collector, so all nodes write into the same destination directory without conflicts when collected centrally.
-
-Optionally, you can also run `just date=YYYYMMDD topology` on each node to inspect a partial topology while the central collection is pending.
+Each fleet node runs `slice` (download RIS + RouteViews + extract paths) for its assigned dates independently. The central machine dispatches, monitors, collects, and builds the final topology.
 
 ---
 
@@ -25,34 +26,51 @@ Optionally, you can also run `just date=YYYYMMDD topology` on each node to inspe
 
 ### 1. Create fleet.csv
 
-Copy the example and fill in your machines:
-
 ```bash
 cp fleet.csv.example fleet.csv
 ```
 
-Format: `username,hostname,/absolute/path/to/repo` — one machine per line. Lines starting with `#` are ignored.
+Format: `username,hostname,/absolute/path/to/repo` — one machine per line.
 
 ```
 # username,hostname,repo_path
-carlos,node1.example.com,/home/carlos/src/internet-topology-ris
+carlos,gauss.xt6labs.io,/home/carlos/src/internet-topology-ris
 carlos,node2.example.com,/home/carlos/src/internet-topology-ris
 carlos,mac.local,/Users/carlos/src/internet-topology-ris
 ```
 
-`fleet.csv` is gitignored — it contains hostnames and paths specific to your deployment. The `fleet.csv.example` template is tracked.
+`fleet.csv` is gitignored — specific to your deployment. The `fleet.csv.example` template is tracked.
 
-### 2. Ensure SSH access
-
-All machines in `fleet.csv` must be reachable with a shared SSH key from the central machine. Test with:
+### 2. Create assignments.csv
 
 ```bash
-ssh carlos@node1.example.com "echo ok"
+cp assignments.csv.example assignments.csv
 ```
 
-### 3. Clone the repo on each node
+Format: `hostname,start_date,end_date,collectors` — one line per tmux session.
 
-Each node needs the repo cloned at the path listed in `fleet.csv`:
+```
+# hostname,start_date,end_date,collectors
+gauss.xt6labs.io,20260701,20260715,rrc00-rrc12
+gauss.xt6labs.io,20260720,20260725,rrc00-rrc12
+node2.example.com,20260716,20260719,rrc13-rrc25
+node2.example.com,20260726,20260731,rrc13-rrc25
+```
+
+- **One line = one tmux session** on that host, iterating its date range serially
+- **Multiple lines per host** = multiple parallel sessions on that host
+- Ranges can be discontinuous — just add more lines
+- `assignments.csv` is gitignored; edit it freely without committing
+
+### 3. Ensure SSH access
+
+All machines must be reachable with a shared SSH key from the central machine:
+
+```bash
+ssh carlos@gauss.xt6labs.io "echo ok"
+```
+
+### 4. Clone the repo on each node
 
 ```bash
 git clone https://github.com/carlos-cagnazzo/internet-topology-ris \
@@ -61,88 +79,109 @@ git clone https://github.com/carlos-cagnazzo/internet-topology-ris \
 
 ---
 
-## Running a slice
-
-On each node, assign a collector range and run `slice`:
+## Dispatching work
 
 ```bash
-just date=20260101 collectors=rrc00-rrc08 slice
+just dispatch           # dispatch all assigned sessions (2 parallel SSH connections)
+just jobs=4 dispatch    # more parallelism
 ```
 
-For RouteViews, you can split manually by passing specific collectors to `get-routeviews.py` directly — the `download-routeviews` recipe runs all 12 default collectors as a unit.
+For each line in `assignments.csv`, `dispatch.sh`:
+
+1. Looks up `user` and `repo` from `fleet.csv`
+2. SSHes to the node and checks whether a tmux session named `slice-START-END` already exists
+3. If not: writes a dated slice script to `/tmp/dispatch-slice-START-END.sh` on the remote and starts it in a new tmux session
+
+The session runs a loop like:
+```bash
+cd /repo && git pull -q
+for d in 20260701 20260702 … 20260715; do
+    just date=$d collectors=rrc00-rrc12 slice
+done
+```
+
+`slice` is self-contained: it downloads RIS collectors, downloads RouteViews, and extracts paths — all for that date.
+
+**Re-running `just dispatch` is safe** — sessions that already exist are skipped.
+
+---
+
+## Checking progress
+
+```bash
+just status
+```
+
+SSHes to each assigned host in one round-trip, checks running tmux sessions and existing `paths/` directories, and prints a table:
+
+```
+gauss.xt6labs.io
+  slice-20260701-20260715  rrc00-rrc12    [running  8/15]
+     20260701✓  20260702✓  20260703✓  20260704✓  20260705✓  20260706✓  20260707✓
+     20260708✓  20260709·  20260710·  20260711·  20260712·  20260713·  20260714·
+     20260715·
+
+node2.example.com
+  slice-20260716-20260719  rrc13-rrc25    [done     4/4]
+     20260716✓  20260717✓  20260718✓  20260719✓
+  slice-20260726-20260731  rrc13-rrc25    [pending  0/6]
+     20260726·  20260727·  20260728·  20260729·  20260730·  20260731·
+```
+
+Status values: `running`, `done`, `partial` (some dates complete, session gone), `pending`.
 
 ---
 
 ## Collecting path files
 
-Once all nodes have finished their slices, collect the path files from the central machine:
+Once nodes are done, collect from the central machine:
 
 ```bash
-just date=20260101 collect
+just date='202607*' collect          # all of July
+just date='202607*' jobs=4 collect   # with more parallelism
 ```
 
-`date` accepts a glob pattern — collect all dates at once instead of looping:
-
-```bash
-just date='202607*' collect    # all of July 2026
-just date='2026*'   collect    # entire year
-```
-
-This runs `collect.sh`, which uses rsync include/exclude filters to sync all directories matching the pattern from each node's `paths/` into the local `./paths/`. Up to `jobs` rsyncs run in parallel (default 2):
-
-```bash
-just date='202607*' jobs=4 collect
-```
-
-Per-host logs go to `./logs/collect-<date>/<hostname>.log`. Any failed hosts are reported at the end; the exit code is non-zero if any rsync failed.
+`date` accepts glob patterns. Files already present locally are skipped (`--ignore-existing`). Per-host logs go to `./logs/collect-202607/<hostname>.log`.
 
 ---
 
 ## Building the global topology
 
-After collecting, build the topology from all merged path files:
+```bash
+just date='202607*' topology          # combined + v4 + v6
+just date='202607*' topology-combined # combined only
+```
+
+!!! tip "OOM on large datasets"
+    `build-topology.py` defaults to `cpu_count` workers. On machines with many cores this can exhaust memory. Use `workers` to limit it:
+    ```bash
+    just date='202607*' workers=2 topology-combined
+    ```
+
+---
+
+## Typical full-month workflow
 
 ```bash
-just date=20260101 topology
+# 1. Edit assignments.csv with the month's ranges and collector splits
+#    (each line = one tmux session)
+
+# 2. Dispatch from the central machine
+just dispatch
+
+# 3. Check progress periodically
+just status
+
+# 4. Once all done, collect and build
+just date='202607*' jobs=4 collect
+just date='202607*' workers=4 topology
 ```
 
 ---
 
 ## Fetching output files from remote machines
 
-`fetch-results.sh` collects **output** files (topologies) rather than path files, using rsync into per-host subdirectories to avoid conflicts:
-
-```bash
-./fetch-results.sh
-```
-
-Configure `SOURCES`, `INCLUDES`, and `EXCLUDE` at the top of the script. Count unique ASNs across all fetched topologies:
-
-```bash
-zcat fetch/*/topology-????????.txt \
-  | awk '{print $1; print $2}' \
-  | sort -un \
-  | wc -l
-```
+`fetch-results.sh` collects topology **output** files (not path files) from remote machines via rsync into per-host subdirectories. Configure `SOURCES`, `INCLUDES`, and `EXCLUDE` at the top of the script.
 
 !!! note "Legacy"
-    `fetch-results.sh` predates the fleet/collect workflow and may be superseded by it for most use cases. It remains useful for ad-hoc collection without a `fleet.csv`.
-
----
-
-## Typical multi-date workflow across a fleet
-
-```bash
-# On each node (different collector slice per node):
-for d in 20260101 20260201 20260301; do
-  just date=$d collectors=rrc00-rrc08 slice
-done
-
-# On the central machine — collect all three dates in one pass:
-just date='202601*' jobs=4 collect
-
-# Build topology per date:
-for d in 20260101 20260201 20260301; do
-  just date=$d topology
-done
-```
+    `fetch-results.sh` predates the dispatch/collect workflow. It remains useful for ad-hoc collection without `fleet.csv` / `assignments.csv`.

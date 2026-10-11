@@ -30,7 +30,9 @@ get-routeviews.py   ──┘
 | `topology-combined` | `build-topology.py` on combined path files |
 | `topology-v4` | `build-topology.py` on IPv4 path files |
 | `topology-v6` | `build-topology.py` on IPv6 path files |
-| `slice` | `download` + `process` only (for fleet nodes) |
+| `slice` | `download` + `download-routeviews` + `process` (self-contained, for fleet nodes) |
+| `dispatch` | dispatch slice jobs to all fleet nodes via `assignments.csv` + `fleet.csv` |
+| `status` | report per-date progress for all assigned fleet nodes |
 | `collect` | rsync path files from all fleet nodes |
 | `pack-and-publish` | tar + copy to a publish point |
 
@@ -46,7 +48,8 @@ get-routeviews.py   ──┘
 | `output` | `topology-<date>.txt` | Combined output filename. |
 | `output_v4` | `topology-<date>-v4.txt` | IPv4 output filename. |
 | `output_v6` | `topology-<date>-v6.txt` | IPv6 output filename. |
-| `jobs` | `2` | Parallel rsync jobs for `collect`. |
+| `jobs` | `2` | Parallel connections for `collect` and `dispatch`. |
+| `workers` | *(empty)* | Worker count for `build-topology.py` (topology recipes). Omit for `cpu_count`. Set low (e.g. `2`) to avoid OOM on large datasets. |
 | `pubpoint` | `/var/www/html/topo` | Destination for `pack-and-publish`. |
 
 ---
