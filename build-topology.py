@@ -25,6 +25,12 @@ Always writes two output files:
 With --paths, also writes:
   {stem}-paths.txt — unique AS paths seen across all input files, sorted numerically
 
+Per-file processing is checkpointed: each input file produces a sorted
+{name}.edges sidecar stored next to the path file. On a resumed run, files
+whose sidecar already exists are skipped. Sidecars are deleted after a
+successful topology merge. Use --keep-edges to retain them, or the
+clean-edges just recipe to remove them manually.
+
 Input files are processed in parallel using ProcessPoolExecutor.
 """
 
@@ -101,14 +107,7 @@ def _worker_init(
 
 
 def open_path_file(path: Path):
-    """Open a path file for reading, transparently handling gzip compression.
-
-    Args:
-        path: Path to a plain or gzip-compressed AS path file.
-
-    Returns:
-        An open text-mode file handle.
-    """
+    """Open a path file for reading, transparently handling gzip compression."""
     with path.open("rb") as fh:
         magic = fh.read(2)
     if magic == b"\x1f\x8b":
@@ -117,27 +116,12 @@ def open_path_file(path: Path):
 
 
 def path_sort_key(line: str) -> tuple:
-    """Return a fully numeric sort key for an AS path line.
-
-    Args:
-        line: Space-separated AS path string, optionally with a trailing newline.
-
-    Returns:
-        Tuple of ints, one per ASN token.
-    """
+    """Return a fully numeric sort key for a space-separated integer line."""
     return tuple(int(x) for x in line.split())
 
 
 def fmt(asn: str, justify: bool) -> str:
-    """Format an ASN string for file output.
-
-    Args:
-        asn:     ASN as a plain string (e.g. '6057').
-        justify: When True, zero-pad to ASN_FIELD_WIDTH digits (e.g. '00006057').
-
-    Returns:
-        Formatted ASN string.
-    """
+    """Format an ASN string, optionally zero-padding to ASN_FIELD_WIDTH digits."""
     return asn.zfill(ASN_FIELD_WIDTH) if justify else asn
 
 
@@ -147,15 +131,7 @@ def fmt(asn: str, justify: bool) -> str:
 
 
 def fetch_nro_stats(cache_dir: Path, date: "str | None") -> Path:
-    """Return path to a local NRO delegated stats file, downloading if needed.
-
-    Args:
-        cache_dir: Directory where the stats file should be cached.
-        date:      Snapshot date in YYYYMMDD format, or None for the latest file.
-
-    Returns:
-        Path to the cached file.
-    """
+    """Return path to a local NRO delegated stats file, downloading if needed."""
     if date:
         url = NRO_STATS_URL_HISTORICAL.format(date=date)
         cache_path = cache_dir / NRO_CACHE_FILENAME_DATED.format(date=date)
@@ -185,14 +161,7 @@ def fetch_nro_stats(cache_dir: Path, date: "str | None") -> Path:
 
 
 def load_registered_asns(stats_path: Path) -> "set[str]":
-    """Parse the NRO delegated stats file and return the set of assigned ASNs.
-
-    Args:
-        stats_path: Path to the local NRO delegated stats file.
-
-    Returns:
-        Set of ASN strings for all assigned autonomous systems.
-    """
+    """Parse the NRO delegated stats file and return the set of assigned ASNs."""
     registered: set[str] = set()
     with stats_path.open() as fh:
         for line in fh:
@@ -228,12 +197,6 @@ def _sort_to_file(raw_path: Path) -> Path:
 
     Uses chunked in-memory sort + heapq.merge to handle arbitrarily large
     files without loading everything into memory at once.
-
-    Args:
-        raw_path: Unsorted, non-deduplicated raw paths file.
-
-    Returns:
-        Path to a new temp file containing sorted, deduplicated paths.
     """
     chunk_paths: list[Path] = []
     try:
@@ -288,18 +251,30 @@ def _sort_to_file(raw_path: Path) -> Path:
 
 
 def _process_file(txt_path_str: str) -> dict:
-    """Process one AS path file and return accumulated results.
+    """Process one AS path file, writing a sorted .edges sidecar next to it.
 
-    Args:
-        txt_path_str: String path to the AS path file to process.
+    If the sidecar already exists the file is skipped (checkpoint/resume).
+    The per-file edge set is bounded to one file so it is safe to hold in RAM.
 
     Returns:
-        Dict with keys: name, edges, asns, dropped_asns, raw_path_count,
-        paths_file (str path to sorted temp file, or None).
+        Dict with keys: name, edges_file, dropped_asns, raw_path_count,
+        skipped (bool), paths_file (str path to sorted temp file, or None).
     """
     txt_path = Path(txt_path_str)
+    sidecar = txt_path.parent / (txt_path.name + ".edges")
+
+    # Resume: sidecar already written by a previous (possibly failed) run.
+    if sidecar.exists():
+        return {
+            "name": txt_path.name,
+            "edges_file": str(sidecar),
+            "dropped_asns": set(),
+            "raw_path_count": 0,
+            "skipped": True,
+            "paths_file": None,
+        }
+
     edges: set[tuple[str, str]] = set()
-    asns: set[str] = set()
     dropped_asns: set[str] = set()
     raw_path_count = 0
     tmp_fh = None
@@ -330,8 +305,6 @@ def _process_file(txt_path_str: str) -> dict:
                 for a, b in zip(tokens, tokens[1:]):
                     edge = (a, b) if int(a) < int(b) else (b, a)
                     edges.add(edge)
-                    asns.add(a)
-                    asns.add(b)
 
         if tmp_fh:
             tmp_fh.close()
@@ -353,14 +326,81 @@ def _process_file(txt_path_str: str) -> dict:
             tmp_path.unlink(missing_ok=True)
         raise
 
+    # Write edges sorted to a temp file then rename atomically to the sidecar.
+    # Atomic rename prevents a partial write from looking like a valid sidecar.
+    sidecar_tmp = sidecar.parent / (sidecar.name + ".tmp")
+    try:
+        with sidecar_tmp.open("w") as ef:
+            for a, b in sorted(edges, key=lambda e: (int(e[0]), int(e[1]))):
+                ef.write(f"{a} {b}\n")
+        sidecar_tmp.rename(sidecar)
+    except Exception:
+        sidecar_tmp.unlink(missing_ok=True)
+        raise
+
     return {
         "name": txt_path.name,
-        "edges": edges,
-        "asns": asns,
+        "edges_file": str(sidecar),
         "dropped_asns": dropped_asns,
         "raw_path_count": raw_path_count,
+        "skipped": False,
         "paths_file": str(sorted_path) if sorted_path else None,
     }
+
+
+# ---------------------------------------------------------------------------
+# k-way merge of pre-sorted per-file edge sidecars
+# ---------------------------------------------------------------------------
+
+
+def _merge_edges(
+    edges_files: list[str],
+    out_path: Path,
+    justify: bool,
+    total_hint: int,
+) -> int:
+    """k-way merge of per-file sorted edge sidecar files, deduplicating globally.
+
+    Args:
+        edges_files: Paths to per-file sorted .edges sidecar files.
+        out_path:    Destination for the final deduplicated edge list.
+        justify:     Whether to zero-pad ASNs in the output.
+        total_hint:  Approximate line count for progress bar sizing.
+
+    Returns:
+        Number of unique edges written.
+    """
+    handles = [open(p) for p in edges_files]
+    count = 0
+    progress = Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        MofNColumn(),
+        TimeElapsedColumn(),
+        console=console,
+    )
+    try:
+        with progress:
+            task = progress.add_task("  Merging & deduplicating edges", total=total_hint)
+            with out_path.open("w") as out_fh:
+                prev = None
+                for line in heapq.merge(*handles, key=path_sort_key):
+                    line = line.rstrip("\n")
+                    progress.advance(task)
+                    if not line or line == prev:
+                        continue
+                    if justify:
+                        a, b = line.split()
+                        out_fh.write(f"{fmt(a, True)} {fmt(b, True)}\n")
+                    else:
+                        out_fh.write(line + "\n")
+                    prev = line
+                    count += 1
+    finally:
+        for fh in handles:
+            fh.close()
+    return count
 
 
 # ---------------------------------------------------------------------------
@@ -374,17 +414,7 @@ def _merge_paths(
     justify: bool,
     total_hint: int,
 ) -> int:
-    """k-way merge of pre-sorted per-file path files, deduplicating globally.
-
-    Args:
-        paths_files: List of paths to sorted per-file paths temp files.
-        out_path:    Destination file for the final merged paths.
-        justify:     Whether to zero-pad ASNs in the output.
-        total_hint:  Approximate line count for progress bar sizing.
-
-    Returns:
-        Number of unique paths written.
-    """
+    """k-way merge of pre-sorted per-file path files, deduplicating globally."""
     if not paths_files:
         out_path.touch()
         return 0
@@ -483,6 +513,14 @@ def main(
         ),
         metavar="YYYYMMDD",
     ),
+    keep_edges: bool = typer.Option(
+        False,
+        "--keep-edges/--no-keep-edges",
+        help=(
+            "Keep .edges sidecar files after a successful merge instead of deleting them. "
+            "Useful for debugging or when you plan to re-run with different flags."
+        ),
+    ),
 ) -> None:
     """Build a deduplicated undirected AS-level topology edge list from AS path files."""
     start = time.monotonic()
@@ -514,11 +552,11 @@ def main(
     else:
         console.print()
 
-    # Process files in parallel
-    all_edges: set[tuple[str, str]] = set()
-    all_asns: set[str] = set()
+    # Process files in parallel — each writes a .edges sidecar next to the input.
+    edges_files: list[str] = []
     all_dropped_asns: set[str] = set()
     total_raw = 0
+    total_skipped = 0
     paths_files: list[str] = []
 
     progress = Progress(
@@ -541,36 +579,50 @@ def main(
             futures = {pool.submit(_process_file, p): p for p in matches}
             for future in as_completed(futures):
                 result = future.result()
+                skipped_tag = " [dim](cached)[/dim]" if result["skipped"] else ""
                 progress.update(
                     overall,
-                    description=f"[cyan]{result['name']}[/cyan]",
+                    description=f"[cyan]{result['name']}[/cyan]{skipped_tag}",
                     advance=1,
                 )
-                all_edges |= result["edges"]
-                all_asns |= result["asns"]
+                edges_files.append(result["edges_file"])
                 all_dropped_asns |= result["dropped_asns"]
                 total_raw += result["raw_path_count"]
+                if result["skipped"]:
+                    total_skipped += 1
                 if result["paths_file"]:
                     paths_files.append(result["paths_file"])
 
+    if total_skipped:
+        console.print(
+            f"  [dim]{total_skipped:,} file(s) skipped — .edges sidecars reused[/dim]"
+        )
+
     output.parent.mkdir(parents=True, exist_ok=True)
 
-    # Write edge list
+    # k-way merge of all per-file sorted edge sidecars → final topology file.
+    # Memory usage: O(number of open files × merge buffer), not O(all edges).
     console.print(
-        f"  Writing [bold]{len(all_edges):,}[/bold] edges → [green]{output}[/green] ..."
+        f"  Merging {len(edges_files):,} edge sidecar(s) → [green]{output}[/green] ..."
     )
-    with output.open("w") as fh:
-        for a, b in sorted(all_edges, key=lambda e: (int(e[0]), int(e[1]))):
-            fh.write(f"{fmt(a, justify_output)} {fmt(b, justify_output)}\n")
+    total_hint = total_raw  # rough proxy; exact count unknown until merge
+    n_edges = _merge_edges(edges_files, output, justify_output, total_hint)
+    console.print(f"  [bold]{n_edges:,}[/bold] unique edges written.")
 
-    # Write ASN list
+    # Derive the ASN list from one pass over the finished topology file.
     asns_path = output.parent / f"{output.stem}-asns{output.suffix}"
-    console.print(
-        f"  Writing [bold]{len(all_asns):,}[/bold] ASNs → [green]{asns_path}[/green] ..."
-    )
+    console.print(f"  Deriving ASN list → [green]{asns_path}[/green] ...")
+    all_asns: set[str] = set()
+    with output.open() as fh:
+        for line in fh:
+            parts = line.split()
+            if len(parts) >= 2:
+                all_asns.add(parts[0].lstrip("0") or "0")
+                all_asns.add(parts[1].lstrip("0") or "0")
     with asns_path.open("w") as fh:
         for asn in sorted(all_asns, key=int):
             fh.write(f"{fmt(asn, justify_output)}\n")
+    console.print(f"  [bold]{len(all_asns):,}[/bold] unique ASNs.")
 
     # Build final paths file (only if --paths)
     unique_path_count: "int | None" = None
@@ -597,12 +649,30 @@ def main(
             for asn in sorted(all_dropped_asns, key=int):
                 fh.write(f"{fmt(asn, justify_output)}\n")
 
+    # Clean up edge sidecars on success unless --keep-edges was passed.
+    if not keep_edges:
+        deleted = 0
+        for ef in edges_files:
+            try:
+                Path(ef).unlink()
+                deleted += 1
+            except FileNotFoundError:
+                pass
+        if deleted:
+            console.print(f"  [dim]{deleted:,} .edges sidecar(s) deleted.[/dim]")
+    else:
+        console.print(
+            f"  [dim]{len(edges_files):,} .edges sidecar(s) kept (--keep-edges).[/dim]"
+        )
+
     elapsed = time.monotonic() - start
     summary = (
         f"\n[bold]Done.[/bold]\n"
-        f"  Files processed : {total_files:,}\n"
+        f"  Files processed : {total_files - total_skipped:,}"
+        + (f"  (+{total_skipped:,} resumed from cache)" if total_skipped else "")
+        + f"\n"
         f"  AS paths read   : {total_raw:,}\n"
-        f"  Unique edges    : {len(all_edges):,}\n"
+        f"  Unique edges    : {n_edges:,}\n"
         f"  Unique ASNs     : {len(all_asns):,}\n"
     )
     if unique_path_count is not None:

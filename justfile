@@ -144,6 +144,20 @@ topology-v6:
         --input "{{ paths_dir }}/{{ date }}/*.bz2.v6.txt" \
         --output "{{ output_dir }}/${safe}/topology-${safe}-v6.txt"
 
+# Remove .edges checkpoint sidecars left by an interrupted topology build
+# date accepts a glob: just date='202607*' clean-edges
+clean-edges:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    count=$(find "{{ paths_dir }}/{{ date }}" -name "*.edges" 2>/dev/null | wc -l | tr -d ' ')
+    if [ "$count" -eq 0 ]; then
+        echo "No .edges files found under {{ paths_dir }}/{{ date }}"
+        exit 0
+    fi
+    echo "Deleting ${count} .edges file(s) under {{ paths_dir }}/{{ date }} ..."
+    find "{{ paths_dir }}/{{ date }}" -name "*.edges" -delete
+    echo "Done."
+
 # Start JupyterLab bound to the Tailscale interface
 lab2:
     uv run jupyter lab --ip 100.98.4.21 --no-browser --notebook-dir ./ --IdentityProvider.token=''
