@@ -24,6 +24,9 @@ eda/.ipynb_checkpoints
 fleet.csv
 assignments.csv
 
+caida-cache/
+output-combined/
+
 # Local scratch files
 JoseNoCarlos-RIS.txt
 claudio.adjacencies.txt

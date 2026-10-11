@@ -37,6 +37,7 @@ pubpoint   := "/var/www/html/topo"
 jobs       := "2"
 workers    := ""
 paths      := ""
+no_justify := ""
 
 # List available recipes
 default:
@@ -157,6 +158,19 @@ clean-edges:
     echo "Deleting ${count} checkpoint sidecar(s) under {{ paths_dir }}/{{ date }}/combined ..."
     find "{{ paths_dir }}/{{ date }}/combined" \( -name "*.edges" -o -name "*.paths.gz" \) -delete
     echo "Done."
+
+# Download CAIDA AS relationships for a month and extract peer-to-peer edges
+# Usage: just date=202401 caida-peers
+# Optional: just date=202401 no_justify=1 caida-peers
+caida-peers:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    justify_flag="--justify-output"
+    [[ -n "{{ no_justify }}" ]] && justify_flag="--no-justify-output"
+    uv run get-caida-peers.py \
+        --date {{ date }} \
+        --output "{{ output_dir }}/{{ date }}/caida-peers-{{ date }}.txt" \
+        $justify_flag
 
 # Start JupyterLab bound to the Tailscale interface
 lab2:

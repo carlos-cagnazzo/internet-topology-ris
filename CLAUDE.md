@@ -115,6 +115,21 @@ Three scripts forming a linear pipeline, orchestrated via `justfile`:
 - Format: `|`-delimited. ASN records have field[2]`==`asn`. Valid statuses: `assigned` (keep), `available`/`reserved` (discard). Skip lines where field[1]`==`*` (summary) or field[4]`==`summary`.
 - field[3] = start ASN, field[4] = count (expand range with `range(start, start+count)`).
 
+## CAIDA AS Relationships
+
+**`get-caida-peers.py`** — Downloads the CAIDA AS relationships dataset for a given month and extracts peer-to-peer edges (`rel=0`). Prefers serial-2; falls back to serial-1 for months not covered by serial-2 (~pre-2012). Discovers the correct filename by fetching the directory index (files are not always named with the 1st of the month). Caches downloaded `.bz2` files permanently in `./caida-cache/` — CAIDA files are immutable once published. Output: `output-combined/YYYYMM/caida-peers-YYYYMM.txt`.
+
+- `--date YYYYMM` — required
+- `--output PATH` — override default output path
+- `--justify-output / --no-justify-output` — zero-pad ASNs to 8 digits (default: on)
+- `--cache-dir` — override cache location (default: `./caida-cache`)
+
+Justfile: `just date=202401 caida-peers` · `just date=202401 no_justify=1 caida-peers`
+
+Index URLs:
+- Serial-2: `https://publicdata.caida.org/datasets/as-relationships/serial-2/`
+- Serial-1: `https://publicdata.caida.org/datasets/as-relationships/serial-1/`
+
 ## Helper Tools
 
 **`topology-ops.py`** — Set operations on two or more topology edge list files. Input files are positional arguments (minimum 2). `--op add` produces the union of all inputs; `--op sub` produces edges in the first file not present in any of the remaining files. Both plain and zero-padded ASN formats handled transparently (comparison is always numeric). `--justify-output` follows the same convention as other tools.
