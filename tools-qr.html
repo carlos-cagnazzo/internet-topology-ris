@@ -331,10 +331,12 @@ header .hint {
         <span class="tool-desc">Build deduplicated undirected edge list from AS path files</span>
       </div>
       <div class="flags">
-        <div class="f"><span class="k req">--input</span> <span class="v">"paths/*.gz.txt"</span> (repeatable) &nbsp;<span class="k">--output</span> <span class="v">topology.txt</span></div>
+        <div class="f"><span class="k req">--input</span> <span class="v">"paths/*.txt.gz"</span> (repeatable) &nbsp;<span class="k">--output</span> <span class="v">topology.txt</span></div>
         <div class="f"><span class="k">--filter-registered</span> (drop unregistered ASNs via NRO stats) &nbsp;<span class="k">--date</span> <span class="v">YYYYMMDD</span></div>
-        <div class="f"><span class="k">--justify-output</span> (zero-pad to 8 digits) &nbsp;<span class="k">--paths</span> (opt-in) &nbsp;<span class="k">--workers</span> <span class="v">N</span></div>
-        <div class="note">Default outputs: topology.txt, -asns.txt &nbsp;·&nbsp; with <code>--paths</code>: also -paths.txt &nbsp;·&nbsp; with <code>--filter-registered</code>: also -dropped-asns.txt</div>
+        <div class="f"><span class="k">--justify-output</span> (zero-pad to 8 digits) &nbsp;<span class="k">--paths</span> (opt-in consolidated path file) &nbsp;<span class="k">--workers</span> <span class="v">N</span></div>
+        <div class="f"><span class="k">--keep-edges</span> (retain .edges + .paths.gz checkpoint sidecars after merge)</div>
+        <div class="note">Default outputs: topology.txt, -asns.txt &nbsp;·&nbsp; with <code>--paths</code>: also -paths.txt · sidecars: &lt;name&gt;.edges, &lt;name&gt;.paths.gz</div>
+        <div class="note">with <code>--filter-registered</code>: also -dropped-asns.txt &nbsp;·&nbsp; just: <code>just paths=1 topology-combined</code></div>
       </div>
     </div>
 
@@ -423,7 +425,7 @@ header .hint {
     <div class="foot">
       <strong>just recipes</strong> — <code>just date=20240101 collectors=rrc00-rrc25 pipeline</code><br>
       <code>pipeline</code> &nbsp;<code>download</code> &nbsp;<code>download-routeviews</code> &nbsp;<code>process</code> &nbsp;<code>slice</code> &nbsp;<code>dispatch</code> &nbsp;<code>status</code> &nbsp;<code>collect</code> &nbsp;<code>topology</code> &nbsp;<code>topology-v4</code> &nbsp;<code>topology-v6</code> &nbsp;<code>pack-and-publish</code> &nbsp;<code>lab</code><br>
-      <strong>Fleet:</strong> edit <code>assignments.csv</code> → <code>just dispatch</code> → nodes run <code>slice</code> in tmux &nbsp;·&nbsp; monitor: <code>just status</code> &nbsp;·&nbsp; collect: <code>just date='202607*' [jobs=4] collect</code> &nbsp;·&nbsp; build: <code>just date='202607*' [workers=N] topology</code>
+      <strong>Fleet:</strong> edit <code>assignments.csv</code> → <code>just dispatch</code> → nodes run <code>slice</code> in tmux &nbsp;·&nbsp; monitor: <code>just status</code> &nbsp;·&nbsp; collect: <code>just date='202607*' [jobs=4] collect</code> &nbsp;·&nbsp; build: <code>just date='202607*' [workers=N] [paths=1] topology</code>
     </div>
   </div>
 

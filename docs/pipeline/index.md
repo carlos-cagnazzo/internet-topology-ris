@@ -47,6 +47,7 @@ get-routeviews.py   ──┘
 | `output_v6` | `topology-<date>-v6.txt` | IPv6 output filename. |
 | `jobs` | `2` | Parallel connections for `collect` and `dispatch`. |
 | `workers` | *(empty)* | Worker count for `build-topology.py` (topology recipes). Omit for `cpu_count`. Set low (e.g. `2`) to avoid OOM on large datasets. |
+| `paths` | *(empty)* | Set to any non-empty value (e.g. `1`) to write a consolidated paths file from `topology-combined`. Checkpoint/resume aware (`.paths.gz` sidecars). |
 | `pubpoint` | `/var/www/html/topo` | Destination for `pack-and-publish`. |
 
 ---

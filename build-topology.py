@@ -116,6 +116,13 @@ def open_path_file(path: Path):
     return path.open("r")
 
 
+def _open_for_merge(path: str):
+    """Open a file for k-way merging, transparently handling gzip by extension."""
+    if path.endswith(".gz"):
+        return gzip.open(path, "rt")
+    return open(path)
+
+
 def path_sort_key(line: str) -> tuple:
     """Return a fully numeric sort key for a space-separated integer line."""
     return tuple(int(x) for x in line.split())
@@ -252,27 +259,32 @@ def _sort_to_file(raw_path: Path) -> Path:
 
 
 def _process_file(txt_path_str: str) -> dict:
-    """Process one AS path file, writing a sorted .edges sidecar next to it.
+    """Process one AS path file, writing checkpoint sidecars next to it.
 
-    If the sidecar already exists the file is skipped (checkpoint/resume).
-    The per-file edge set is bounded to one file so it is safe to hold in RAM.
+    Always writes a sorted .edges sidecar. When _W_PATHS is True, also writes
+    a gzip-compressed .paths.gz sidecar. Files are skipped when all required
+    sidecars already exist (checkpoint/resume). The per-file edge and path sets
+    are bounded to one file so they are safe to hold in RAM.
 
     Returns:
         Dict with keys: name, edges_file, dropped_asns, raw_path_count,
-        skipped (bool), paths_file (str path to sorted temp file, or None).
+        skipped (bool), paths_file (str path to .paths.gz sidecar, or None).
     """
     txt_path = Path(txt_path_str)
-    sidecar = txt_path.parent / (txt_path.name + ".edges")
+    edges_sidecar  = txt_path.parent / (txt_path.name + ".edges")
+    paths_sidecar  = txt_path.parent / (txt_path.name + ".paths.gz")
 
-    # Resume: sidecar already written by a previous (possibly failed) run.
-    if sidecar.exists():
+    # Resume: skip when all required sidecars are present.
+    edges_done = edges_sidecar.exists()
+    paths_done = (not _W_PATHS) or paths_sidecar.exists()
+    if edges_done and paths_done:
         return {
             "name": txt_path.name,
-            "edges_file": str(sidecar),
+            "edges_file": str(edges_sidecar),
             "dropped_asns": set(),
             "raw_path_count": 0,
             "skipped": True,
-            "paths_file": None,
+            "paths_file": str(paths_sidecar) if _W_PATHS else None,
         }
 
     edges: set[tuple[str, str]] = set()
@@ -311,9 +323,9 @@ def _process_file(txt_path_str: str) -> dict:
             tmp_fh.close()
             tmp_fh = None
 
-        sorted_path: "Path | None" = None
+        sorted_paths_tmp: "Path | None" = None
         if tmp_path is not None:
-            sorted_path = _sort_to_file(tmp_path)
+            sorted_paths_tmp = _sort_to_file(tmp_path)
             tmp_path.unlink(missing_ok=True)
             tmp_path = None
 
@@ -327,25 +339,40 @@ def _process_file(txt_path_str: str) -> dict:
             tmp_path.unlink(missing_ok=True)
         raise
 
-    # Write edges sorted to a temp file then rename atomically to the sidecar.
-    # Atomic rename prevents a partial write from looking like a valid sidecar.
-    sidecar_tmp = sidecar.parent / (sidecar.name + ".tmp")
+    # Write .edges sidecar atomically.
+    edges_tmp = edges_sidecar.parent / (edges_sidecar.name + ".tmp")
     try:
-        with sidecar_tmp.open("w") as ef:
+        with edges_tmp.open("w") as ef:
             for a, b in sorted(edges, key=lambda e: (int(e[0]), int(e[1]))):
                 ef.write(f"{a} {b}\n")
-        sidecar_tmp.rename(sidecar)
+        edges_tmp.rename(edges_sidecar)
     except Exception:
-        sidecar_tmp.unlink(missing_ok=True)
+        edges_tmp.unlink(missing_ok=True)
         raise
+
+    # Write .paths.gz sidecar atomically (only when _W_PATHS).
+    paths_sidecar_written: "Path | None" = None
+    if sorted_paths_tmp is not None:
+        paths_tmp = paths_sidecar.parent / (paths_sidecar.name + ".tmp")
+        try:
+            with open(sorted_paths_tmp) as src, \
+                 gzip.open(paths_tmp, "wt", compresslevel=1) as dst:
+                dst.writelines(src)
+            paths_tmp.rename(paths_sidecar)
+            paths_sidecar_written = paths_sidecar
+        except Exception:
+            paths_tmp.unlink(missing_ok=True)
+            raise
+        finally:
+            sorted_paths_tmp.unlink(missing_ok=True)
 
     return {
         "name": txt_path.name,
-        "edges_file": str(sidecar),
+        "edges_file": str(edges_sidecar),
         "dropped_asns": dropped_asns,
         "raw_path_count": raw_path_count,
         "skipped": False,
-        "paths_file": str(sorted_path) if sorted_path else None,
+        "paths_file": str(paths_sidecar_written) if paths_sidecar_written else None,
     }
 
 
@@ -368,7 +395,7 @@ def _merge_sorted_files_into(
 
     len(files) must be <= MERGE_FD_BATCH to stay under the OS fd limit.
     """
-    handles = [open(p) for p in files]
+    handles = [_open_for_merge(p) for p in files]
     count = 0
     raw_count = 0
     progress = Progress(
@@ -549,8 +576,8 @@ def main(
         False,
         "--keep-edges/--no-keep-edges",
         help=(
-            "Keep .edges sidecar files after a successful merge instead of deleting them. "
-            "Useful for debugging or when you plan to re-run with different flags."
+            "Keep .edges and .paths.gz checkpoint sidecars after a successful merge "
+            "instead of deleting them. Useful when you plan to re-run with different flags."
         ),
     ),
 ) -> None:
@@ -626,8 +653,9 @@ def main(
                     paths_files.append(result["paths_file"])
 
     if total_skipped:
+        what = ".edges + .paths.gz sidecars" if write_paths else ".edges sidecars"
         console.print(
-            f"  [dim]{total_skipped:,} file(s) skipped — .edges sidecars reused[/dim]"
+            f"  [dim]{total_skipped:,} file(s) skipped — {what} reused[/dim]"
         )
 
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -656,19 +684,17 @@ def main(
             fh.write(f"{fmt(asn, justify_output)}\n")
     console.print(f"  [bold]{len(all_asns):,}[/bold] unique ASNs.")
 
-    # Build final paths file (only if --paths)
+    # Build final paths file (only if --paths).
+    # .paths.gz sidecars are NOT deleted in a finally here — they persist for
+    # checkpoint/resume and are cleaned up with .edges below.
     unique_path_count: "int | None" = None
     if write_paths:
         paths_path = output.parent / f"{output.stem}-paths{output.suffix}"
         console.print(f"  Merging paths → [green]{paths_path}[/green] ...")
-        try:
-            unique_path_count = _merge_paths(
-                paths_files, paths_path, justify_output, total_raw
-            )
-            console.print(f"  [bold]{unique_path_count:,}[/bold] unique paths written.")
-        finally:
-            for p in paths_files:
-                Path(p).unlink(missing_ok=True)
+        unique_path_count = _merge_paths(
+            paths_files, paths_path, justify_output, total_raw
+        )
+        console.print(f"  [bold]{unique_path_count:,}[/bold] unique paths written.")
 
     # Write dropped ASNs sidecar
     if filter_registered and all_dropped_asns:
@@ -681,7 +707,7 @@ def main(
             for asn in sorted(all_dropped_asns, key=int):
                 fh.write(f"{fmt(asn, justify_output)}\n")
 
-    # Clean up edge sidecars on success unless --keep-edges was passed.
+    # Clean up checkpoint sidecars on success unless --keep-edges was passed.
     if not keep_edges:
         deleted = 0
         for ef in edges_files:
@@ -690,11 +716,19 @@ def main(
                 deleted += 1
             except FileNotFoundError:
                 pass
+        if write_paths:
+            for pf in paths_files:
+                try:
+                    Path(pf).unlink()
+                except FileNotFoundError:
+                    pass
+        sidecar_label = ".edges + .paths.gz" if write_paths else ".edges"
         if deleted:
-            console.print(f"  [dim]{deleted:,} .edges sidecar(s) deleted.[/dim]")
+            console.print(f"  [dim]{deleted:,} {sidecar_label} sidecar(s) deleted.[/dim]")
     else:
+        sidecar_label = ".edges + .paths.gz" if write_paths else ".edges"
         console.print(
-            f"  [dim]{len(edges_files):,} .edges sidecar(s) kept (--keep-edges).[/dim]"
+            f"  [dim]{len(edges_files):,} {sidecar_label} sidecar(s) kept (--keep-edges).[/dim]"
         )
 
     elapsed = time.monotonic() - start

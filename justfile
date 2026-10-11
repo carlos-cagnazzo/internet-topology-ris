@@ -36,6 +36,7 @@ output_v6  := "topology-" + date + "-v6.txt"
 pubpoint   := "/var/www/html/topo"
 jobs       := "2"
 workers    := ""
+paths      := ""
 
 # List available recipes
 default:
@@ -93,17 +94,19 @@ topology: (topology-combined) (topology-v4) (topology-v6)
 # Step 3a — Combined topology (all prefixes)
 # date accepts a glob: just date='202607*' topology-combined
 # workers controls parallelism/memory: just workers=2 topology-combined
+# paths writes a consolidated paths file: just paths=1 topology-combined
 topology-combined:
     #!/usr/bin/env bash
     set -euo pipefail
     safe="{{ date }}"; safe="${safe//[\*\?\[\]]/}"
     date_flag="";    [[ "{{ date }}"    =~ ^[0-9]{8}$ ]] && date_flag="--date {{ date }}"
     workers_flag=""; [[ -n "{{ workers }}" ]]             && workers_flag="--workers {{ workers }}"
+    paths_flag="";   [[ -n "{{ paths }}" ]]               && paths_flag="--paths"
     mkdir -p "{{ output_dir }}/${safe}"
     uv run build-topology.py \
         --justify-output \
         --filter-registered \
-        $date_flag $workers_flag \
+        $date_flag $workers_flag $paths_flag \
         --input "{{ paths_dir }}/{{ date }}/*.txt.gz" \
         --output "{{ output_dir }}/${safe}/topology-${safe}.txt"
 
@@ -141,18 +144,18 @@ topology-v6:
         --input "{{ paths_dir }}/{{ date }}/*.v6.txt.gz" \
         --output "{{ output_dir }}/${safe}/topology-${safe}-v6.txt"
 
-# Remove .edges checkpoint sidecars left by an interrupted topology build
+# Remove .edges and .paths.gz checkpoint sidecars left by an interrupted topology build
 # date accepts a glob: just date='202607*' clean-edges
 clean-edges:
     #!/usr/bin/env bash
     set -euo pipefail
-    count=$(find "{{ paths_dir }}/{{ date }}" -name "*.edges" 2>/dev/null | wc -l | tr -d ' ')
+    count=$(find "{{ paths_dir }}/{{ date }}" \( -name "*.edges" -o -name "*.paths.gz" \) 2>/dev/null | wc -l | tr -d ' ')
     if [ "$count" -eq 0 ]; then
-        echo "No .edges files found under {{ paths_dir }}/{{ date }}"
+        echo "No .edges / .paths.gz sidecar files found under {{ paths_dir }}/{{ date }}"
         exit 0
     fi
-    echo "Deleting ${count} .edges file(s) under {{ paths_dir }}/{{ date }} ..."
-    find "{{ paths_dir }}/{{ date }}" -name "*.edges" -delete
+    echo "Deleting ${count} checkpoint sidecar(s) under {{ paths_dir }}/{{ date }} ..."
+    find "{{ paths_dir }}/{{ date }}" \( -name "*.edges" -o -name "*.paths.gz" \) -delete
     echo "Done."
 
 # Start JupyterLab bound to the Tailscale interface

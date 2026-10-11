@@ -17,8 +17,9 @@ uv run build-topology.py --input <glob> [--input <glob> ...] [OPTIONS]
 | `--date` | *(none)* | Snapshot date `YYYYMMDD`. Required when using `--filter-registered` with a historical NRO snapshot. |
 | `--filter-registered` | off | Exclude paths containing any non-assigned ASN (see below). |
 | `--justify-output` | off | Zero-pad all ASNs to 8 digits in all output files. |
-| `--paths` | off | Also write a deduplicated path list (large; off by default). |
+| `--paths` | off | Also write a deduplicated path list `{stem}-paths.txt`. Large and expensive; off by default. Checkpoint/resume aware — writes `.paths.gz` sidecars alongside `.edges`. |
 | `--workers` | `cpu_count` | Number of parallel worker processes. |
+| `--keep-edges` | off | Retain `.edges` and `.paths.gz` checkpoint sidecars after a successful merge (useful to re-run with different flags without reprocessing). |
 
 ---
 
@@ -68,7 +69,7 @@ Edges are stored as integer-ordered tuples: the smaller ASN always comes first. 
 
 ## Justfile
 
-The `topology` recipe runs `build-topology.py` three times (combined, v4, v6), passing both `*.gz.*` and `*.bz2.*` globs to merge RIS and RouteViews:
+The `topology` recipe runs `build-topology.py` three times (combined, v4, v6):
 
 ```bash
 just date=20260101 topology
@@ -77,7 +78,23 @@ just date=20260101 topology
 just date=20260101 topology-combined
 just date=20260101 topology-v4
 just date=20260101 topology-v6
+
+# With consolidated paths file (combined only)
+just date=20260101 paths=1 topology-combined
+
+# Limit workers to avoid OOM on large datasets
+just date='202607*' workers=4 topology-combined
+
+# Glob date — all of July
+just date='202607*' topology
 ```
+
+### Justfile variables for topology
+
+| Variable | Default | Description |
+|---|---|---|
+| `workers` | *(empty = cpu_count)* | Worker count for `build-topology.py`. Set lower to avoid OOM. |
+| `paths` | *(empty = off)* | Set to any non-empty value (e.g. `1`) to write a consolidated path file for `topology-combined`. |
 
 ---
 
