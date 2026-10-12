@@ -1,3 +1,6 @@
+# MkDocs build output
+site/
+
 # Python-generated files
 __pycache__/
 *.py[oc]
@@ -16,6 +19,13 @@ nro-delegated-stats
 fetch
 eda/.ipynb_checkpoints
 .ipynb_checkpoints
+
+# Fleet config (contains hostnames/paths, varies per deployment)
+fleet.csv
+assignments.csv
+
+caida-cache/
+output-combined/
 
 # Local scratch files
 JoseNoCarlos-RIS.txt

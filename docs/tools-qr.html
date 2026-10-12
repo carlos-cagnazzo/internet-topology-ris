@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Internet Topology RIS — Tool Quick Reference</title>
+<style>
+/* ── Design tokens ──────────────────────────────────────────────────────── */
+:root {
+  --bg:         #F5F7FA;
+  --surface:    #FFFFFF;
+  --border:     #CDD6E2;
+  --hdr-bg:     #0F1E2D;
+  --hdr-fg:     #D8E8F2;
+  --hdr-sub:    #7A9BB8;
+  --text:       #1A2B3C;
+  --muted:      #586878;
+  --note:       #6E8090;
+  --sep:        #E0E8F0;
+  --foot-bg:    #EEF2F7;
+  --foot-text:  #3A4E60;
+  --k:          #0062A8;   /* flag key */
+  --req:        #C44A0A;   /* required */
+  --accent:     #0D7E9C;   /* teal accent */
+  --code-bg:    #E4EBF2;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:         #0D1720;
+    --surface:    #152030;
+    --border:     #243348;
+    --hdr-bg:     #08111C;
+    --hdr-fg:     #C0D8EC;
+    --hdr-sub:    #5C7E9A;
+    --text:       #C8DCE8;
+    --muted:      #8AACBF;
+    --note:       #6A8EA0;
+    --sep:        #1E3040;
+    --foot-bg:    #0F1A28;
+    --foot-text:  #7A9DB8;
+    --k:          #5AB0D8;
+    --req:        #E07850;
+    --accent:     #26A8C8;
+    --code-bg:    #1A2E40;
+  }
+}
+
+:root[data-theme="light"] {
+  --bg:         #F5F7FA;
+  --surface:    #FFFFFF;
+  --border:     #CDD6E2;
+  --hdr-bg:     #0F1E2D;
+  --hdr-fg:     #D8E8F2;
+  --hdr-sub:    #7A9BB8;
+  --text:       #1A2B3C;
+  --muted:      #586878;
+  --note:       #6E8090;
+  --sep:        #E0E8F0;
+  --foot-bg:    #EEF2F7;
+  --foot-text:  #3A4E60;
+  --k:          #0062A8;
+  --req:        #C44A0A;
+  --accent:     #0D7E9C;
+  --code-bg:    #E4EBF2;
+}
+
+:root[data-theme="dark"] {
+  --bg:         #0D1720;
+  --surface:    #152030;
+  --border:     #243348;
+  --hdr-bg:     #08111C;
+  --hdr-fg:     #C0D8EC;
+  --hdr-sub:    #5C7E9A;
+  --text:       #C8DCE8;
+  --muted:      #8AACBF;
+  --note:       #6A8EA0;
+  --sep:        #1E3040;
+  --foot-bg:    #0F1A28;
+  --foot-text:  #7A9DB8;
+  --k:          #5AB0D8;
+  --req:        #E07850;
+  --accent:     #26A8C8;
+  --code-bg:    #1A2E40;
+}
+
+/* ── Reset & base ───────────────────────────────────────────────────────── */
+@page { size: A4 landscape; margin: 1cm; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 7.8pt;
+  line-height: 1.35;
+  color: var(--text);
+  background: var(--bg);
+}
+
+/* ── Screen wrapper (not active during print) ───────────────────────────── */
+@media screen {
+  body {
+    font-size: 12px;
+    padding: 24px 20px;
+  }
+  .page {
+    max-width: 1060px;
+    margin: 0 auto;
+    background: var(--bg);
+  }
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px;
+  border-bottom: 2px solid var(--hdr-bg);
+  padding-bottom: 5px;
+  margin-bottom: 8px;
+}
+header h1 {
+  font-size: 10.5pt;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  color: var(--text);
+}
+@media screen { header h1 { font-size: 15px; } }
+
+header .hint {
+  font-size: 7pt;
+  color: var(--muted);
+  font-style: italic;
+}
+@media screen { header .hint { font-size: 11px; } }
+
+/* ── Two-column layout ──────────────────────────────────────────────────── */
+.cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  align-items: start;
+}
+@media screen { .cols { gap: 14px; } }
+
+/* ── Section box ────────────────────────────────────────────────────────── */
+.box {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.box-title {
+  background: var(--hdr-bg);
+  color: var(--hdr-fg);
+  font-size: 7.5pt;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 2px solid var(--accent);
+}
+@media screen { .box-title { font-size: 11px; padding: 6px 10px; } }
+
+.box-title span {
+  font-weight: 400;
+  font-size: 6.8pt;
+  font-style: italic;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--hdr-sub);
+}
+@media screen { .box-title span { font-size: 10px; } }
+
+/* ── Tool entry ─────────────────────────────────────────────────────────── */
+.tool {
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--sep);
+}
+.tool:last-child { border-bottom: none; }
+@media screen { .tool { padding: 7px 10px; } }
+
+.tool-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 2px;
+}
+
+.tool-name {
+  font-family: "Menlo", "Cascadia Code", "Consolas", "Courier New", monospace;
+  font-size: 8pt;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+}
+@media screen { .tool-name { font-size: 12px; } }
+
+.tool-desc {
+  font-size: 7.3pt;
+  color: var(--muted);
+  font-style: italic;
+}
+@media screen { .tool-desc { font-size: 11px; } }
+
+/* ── Flag lines ─────────────────────────────────────────────────────────── */
+.flags { padding-left: 8px; }
+
+.f {
+  font-family: "Menlo", "Cascadia Code", "Consolas", "Courier New", monospace;
+  font-size: 7pt;
+  color: var(--text);
+  line-height: 1.5;
+}
+@media screen { .f { font-size: 10.5px; } }
+
+.k   { color: var(--k); font-weight: 600; }
+.v   { color: var(--muted); }
+.req { color: var(--req); font-weight: 700; }
+
+.note {
+  color: var(--note);
+  font-style: italic;
+  font-size: 6.7pt;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  line-height: 1.4;
+}
+@media screen { .note { font-size: 10px; } }
+
+.note code {
+  font-family: "Menlo", "Cascadia Code", "Consolas", monospace;
+  font-size: 6.5pt;
+  background: var(--code-bg);
+  padding: 0 2px;
+  border-radius: 2px;
+  color: var(--note);
+}
+@media screen { .note code { font-size: 9.5px; } }
+
+/* ── Separator between groups ───────────────────────────────────────────── */
+.sep-line {
+  height: 1px;
+  background: var(--border);
+}
+
+/* ── Footer note strip ──────────────────────────────────────────────────── */
+.foot {
+  background: var(--foot-bg);
+  border-top: 1px solid var(--border);
+  padding: 5px 8px;
+  font-size: 7pt;
+  color: var(--foot-text);
+  line-height: 1.6;
+}
+@media screen { .foot { font-size: 10.5px; padding: 7px 10px; } }
+
+.foot code {
+  font-family: "Menlo", "Cascadia Code", "Consolas", monospace;
+  font-size: 6.8pt;
+  background: var(--code-bg);
+  padding: 0 3px;
+  border-radius: 2px;
+}
+@media screen { .foot code { font-size: 10px; } }
+
+.foot strong { color: var(--text); }
+
+.produced {
+  text-align: right;
+  font-size: 6.5pt;
+  color: var(--foot-text);
+  padding: 3px 8px 0;
+  opacity: 0.6;
+}
+@media screen { .produced { font-size: 10px; padding: 4px 12px 0; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header>
+  <h1>Internet Topology RIS &mdash; Tool Quick Reference</h1>
+  <span class="hint">Collector range syntax: rrc00-rrc05,rrc11 &nbsp;·&nbsp; Dates: YYYYMMDD &nbsp;·&nbsp; <strong>just</strong>: variable assignments must come BEFORE the recipe name</span>
+</header>
+
+<div class="cols">
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       LEFT COLUMN — PIPELINE
+       ══════════════════════════════════════════════════════════════════════ -->
+  <div class="box">
+    <div class="box-title">Pipeline tools <span>— ./run.sh &lt;tool&gt; or uv run pipeline/&lt;tool&gt;</span></div>
+
+    <div class="tool">
+      <div class="tool-head">
+        <span class="tool-name">get-mrt.py</span>
+        <span class="tool-desc">Download RIPE RIS bview (00:00 UTC RIB snapshot)</span>
+      </div>
+      <div class="flags">
+        <div class="f"><span class="k req">--collectors</span> <span class="v">rrc00-rrc25</span> &nbsp;<span class="k req">--date</span> <span class="v">20240101</span> &nbsp;<span class="k">--output-dir</span> <span class="v">./mrt</span></div>
+        <div class="note">Skips already-downloaded files · failed collectors reported but do not abort</div>
+      </div>
+    </div>
+
+    <div class="tool">
+      <div class="tool-head">
+        <span class="tool-name">get-routeviews.py</span>
+        <span class="tool-desc">Download RouteViews bview (.bz2)</span>
+      </div>
+      <div class="flags">
+        <div class="f"><span class="k req">--collectors</span> <span class="v">route-views.amsix,ix-br2.gru,namex.fco,route-views2,route-views.sg,</span></div>
+        <div class="f"><span class="v" style="padding-left:0.9em">crix.sjo,hkix.hkg,route-views.chicago,route-views.kixp,route-views.rio,route-views.perth,pacwave.lax</span></div>
+        <div class="f"><span class="k req">--date</span> <span class="v">20240101</span> &nbsp;<span class="k">--output-dir</span> <span class="v">./mrt</span></div>
+        <div class="note">Working subset of ~40 collectors · no range notation · add more via the <code>download-routeviews</code> justfile recipe</div>
+      </div>
+    </div>
+
+    <div class="tool">
+      <div class="tool-head">
+        <span class="tool-name">extract-paths.py</span>
+        <span class="tool-desc">Extract AS paths from MRT files via bgpreader</span>
+      </div>
+      <div class="flags">
+        <div class="f"><span class="k req">--input-files</span> <span class="v">"mrt/20240101/*.gz"</span> &nbsp;<span class="k">--output-dir</span> <span class="v">./paths/20240101</span></div>
+        <div class="note">Accepts .gz and .bz2 · writes paths/&lt;date&gt;/combined/*.txt.gz, v4/*.v4.txt.gz, v6/*.v6.txt.gz · skips complete sets</div>
+      </div>
+    </div>
+
+    <div class="sep-line"></div>
+
+    <div class="tool">
+      <div class="tool-head">
+        <span class="tool-name">build-topology.py</span>
+        <span class="tool-desc">Build deduplicated undirected edge list from AS path files</span>
+      </div>
+      <div class="flags">
+        <div class="f"><span class="k req">--input</span> <span class="v">"paths/&lt;date&gt;/combined/*.txt.gz"</span> (repeatable) &nbsp;<span class="k">--output</span> <span class="v">topology.txt</span></div>
+        <div class="f"><span class="k">--filter-registered</span> (drop unregistered ASNs via NRO stats) &nbsp;<span class="k">--date</span> <span class="v">YYYYMMDD</span></div>
+        <div class="f"><span class="k">--justify-output</span> (zero-pad to 8 digits) &nbsp;<span class="k">--paths</span> (opt-in consolidated path file) &nbsp;<span class="k">--workers</span> <span class="v">N</span></div>
+        <div class="f"><span class="k">--keep-edges</span> (retain .edges + .paths.gz checkpoint sidecars after merge)</div>
+        <div class="note">Default outputs: topology.txt, -asns.txt &nbsp;·&nbsp; with <code>--paths</code>: also -paths.txt · sidecars in <code>paths/&lt;date&gt;/combined/</code>: &lt;name&gt;.edges, &lt;name&gt;.paths.gz</div>
+        <div class="note">with <code>--filter-registered</code>: also -dropped-asns.txt &nbsp;·&nbsp; just: <code>just paths=1 topology-combined</code></div>
+      </div>
+    </div>
+
+    <div class="tool">
+      <div class="tool-head">
+        <span class="tool-name">get-caida-peers.py</span>
+        <span class="tool-desc">Extract peer-to-peer edges from CAIDA AS relationships dataset</span>
+      </div>
+      <div class="flags">
+        <div class="f"><span class="k req">--date</span> <span class="v">YYYYMM</span> &nbsp;<span class="k">--output</span> <span class="v">output-combined/YYYYMM/caida-peers-YYYYMM.txt</span></div>
+        <div class="f"><span class="k">--justify-output</span> / <span class="k">--no-justify-output</span> (default: on) &nbsp;<span class="k">--cache-dir</span> <span class="v">./caida-cache</span></div>
+        <div class="note">Always writes two files: <code>caida-peers-YYYYMM.txt</code> (rel=0 edges) + <code>caida-tier1-YYYYMM.txt</code> (provider-free ASNs, ~100–200)</div>
+        <div class="note">Prefers serial-2; falls back to serial-1 (pre-2012) · discovers filename from CAIDA index · caches .bz2 permanently</div>
+        <div class="note">just: <code>just date=202401 caida-peers</code> &nbsp;·&nbsp; <code>just date=202401 no_justify=1 caida-peers</code></div>
+      </div>
+    </div>
+
+    <div class="tool">
+      <div class="tool-head">
+        <span class="tool-name">path-transit-freq.py</span>
+        <span class="tool-desc">Count transit AS frequency across a path file</span>
+      </div>
+      <div class="flags">
+        <div class="f"><span class="k req">--input</span> <span class="v">paths.txt[.gz]</span> &nbsp;<span class="k">--output</span> <span class="v">&lt;stem&gt;-transit-freq.txt</span> &nbsp;<span class="k">--justify-output</span></div>
+        <div class="note">Strips first (sensor) + last (origin) ASN per path · deduplicates intermediates per path (collapses prepends) · sorted by freq descending</div>
+        <div class="note">Skips paths with ≤2 ASes · reports skipped count at end</div>
+      </div>
+    </div>
+
+    <div class="tool">
+      <div class="tool-head">
+        <span class="tool-name">topology-ops.py</span>
+        <span class="tool-desc">Set operations on topology edge list files</span>
+      </div>
+      <div class="flags">
+        <div class="f"><span class="k req">--op</span> <span class="v">add</span>|<span class="v">sub</span> &nbsp;<span class="k req">--output</span> <span class="v">out.txt</span> &nbsp;<span class="v">FILE [FILE …]</span> &nbsp;<span class="k">--justify-output</span></div>
+        <div class="note">add = union of all files &nbsp;·&nbsp; sub = first file minus all subsequent files</div>
+      </div>
+    </div>
+
+    <div class="tool">
+      <div class="tool-head">
+        <span class="tool-name">lookup-as.py</span>
+        <span class="tool-desc">Query RIPEstat: holder name, prefix count, last seen</span>
+      </div>
+      <div class="flags">
+        <div class="f"><span class="k">--asn</span> <span class="v">N</span> &nbsp;|&nbsp; <span class="k">--file</span> <span class="v">asns.txt</span> &nbsp;|&nbsp; stdin &nbsp;&nbsp;<span class="k">--output</span> <span class="v">out.tsv</span> &nbsp;<span class="k">--concurrency</span> <span class="v">10</span></div>
+      </div>
+    </div>
+
+    <div class="tool">
+      <div class="tool-head">
+        <span class="tool-name">dispatch.sh</span>
+        <span class="tool-desc">Dispatch slice jobs to fleet nodes via tmux (fire-and-forget)</span>
+      </div>
+      <div class="flags">
+        <div class="f"><span class="v">./fleet/dispatch.sh</span> <span class="v">[parallel_jobs=2]</span> &nbsp;·&nbsp; <span class="v">just dispatch</span> &nbsp;·&nbsp; <span class="v">just jobs=4 dispatch</span></div>
+        <div class="note">Reads <code>assignments.csv</code> (copy from <code>fleet/assignments.csv.example</code>): <code>hostname,start_date,end_date,collectors</code></div>
+        <div class="note">One line = one tmux session named <code>slice-START-END</code> · multiple lines per host = parallel sessions · idempotent (skips existing sessions)</div>
+        <div class="note">Each session loops through its date range running <code>just date=$d slice</code> · requires fleet.csv, python3, tmux on all nodes</div>
+      </div>
+    </div>
+
+    <div class="tool">
+      <div class="tool-head">
+        <span class="tool-name">status.sh</span>
+        <span class="tool-desc">Report per-date slice progress for all fleet nodes in assignments.csv</span>
+      </div>
+      <div class="flags">
+        <div class="f"><span class="v">./fleet/status.sh</span> &nbsp;·&nbsp; <span class="v">just status</span></div>
+        <div class="note">SSHes once per host · checks running tmux sessions + existing <code>paths/</code> dirs · shows ✓/· grid per date (7 per row)</div>
+        <div class="note">Status labels: <code>running</code> / <code>done</code> / <code>partial</code> (some dates done, session gone) / <code>pending</code></div>
+      </div>
+    </div>
+
+    <div class="tool">
+      <div class="tool-head">
+        <span class="tool-name">collect.sh</span>
+        <span class="tool-desc">Collect path files from fleet nodes after slice runs</span>
+      </div>
+      <div class="flags">
+        <div class="f"><span class="v">./fleet/collect.sh</span> <span class="k req">YYYYMMDD|PATTERN</span> <span class="v">[parallel_jobs=2]</span> &nbsp;·&nbsp; reads <span class="v">fleet.csv</span> (copy from <span class="v">fleet/fleet.csv.example</span>)</div>
+        <div class="f"><span class="v">just date='202607*' collect</span> &nbsp;·&nbsp; <span class="v">just date='2026*' collect</span> &nbsp;·&nbsp; <span class="v">just date=20260701 collect</span></div>
+        <div class="note">fleet.csv lines: <code>username,hostname,/path/to/repo</code> · # comments and blank lines skipped</div>
+        <div class="note">date accepts glob patterns — collects all matching date dirs in one pass · local files skipped (<code>--ignore-existing</code>)</div>
+        <div class="note">Logs: logs/collect-&lt;date&gt;/&lt;hostname&gt;.log · continues on failure · reports failed hosts · requires bash 4+ (macOS: brew install bash)</div>
+      </div>
+    </div>
+
+    <div class="tool">
+      <div class="tool-head">
+        <span class="tool-name">fetch-results.sh</span>
+        <span class="tool-desc">Rsync topology outputs from multiple remote machines (legacy)</span>
+      </div>
+      <div class="flags">
+        <div class="note">Configure SOURCES (rsync URLs), INCLUDES (glob array), EXCLUDE at top of script</div>
+        <div class="note">Output: ./fetch/&lt;hostname&gt;/ · continues on per-host failure · reports failed hosts</div>
+      </div>
+    </div>
+
+    <div class="tool">
+      <div class="tool-head">
+        <span class="tool-name">download-routeviews-month.sh</span>
+        <span class="tool-desc">Download one RouteViews bview per day for an entire month</span>
+      </div>
+      <div class="flags">
+        <div class="f"><span class="v">./fleet/download-routeviews-month.sh</span> <span class="k req">YYYYMM</span> <span class="v">[parallel_jobs=4]</span></div>
+        <div class="note">Output: ./mrt-routeviews/YYYYMMDD/ · logs: ./logs/routeviews-YYYYMM/YYYYMMDD.log</div>
+      </div>
+    </div>
+
+    <div class="foot">
+      <strong>just recipes</strong> — <code>just date=20240101 collectors=rrc00-rrc25 pipeline</code><br>
+      <code>pipeline</code> &nbsp;<code>download</code> &nbsp;<code>download-routeviews</code> &nbsp;<code>process</code> &nbsp;<code>slice</code> &nbsp;<code>dispatch</code> &nbsp;<code>status</code> &nbsp;<code>collect</code> &nbsp;<code>topology</code> &nbsp;<code>topology-v4</code> &nbsp;<code>topology-v6</code> &nbsp;<code>caida-peers</code> &nbsp;<code>pack-and-publish</code> &nbsp;<code>lab</code><br>
+      <strong>Fleet:</strong> edit <code>assignments.csv</code> → <code>just dispatch</code> → nodes run <code>slice</code> in tmux &nbsp;·&nbsp; monitor: <code>just status</code> &nbsp;·&nbsp; collect: <code>just date='202607*' [jobs=4] collect</code> &nbsp;·&nbsp; build: <code>just date='202607*' [workers=N] [paths=1] topology</code>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       RIGHT COLUMN — GRAPH ANALYSIS
+       ══════════════════════════════════════════════════════════════════════ -->
+  <div class="box">
+    <div class="box-title">Analysis tools <span>— ./run.sh &lt;tool&gt; or uv run analysis/&lt;tool&gt;</span></div>
+
+    <div class="tool">
+      <div class="tool-head">
+        <span class="tool-name">topology-to-gml.py</span>
+        <span class="tool-desc">Convert topology edge list to NetworkX GML (Gephi, yEd, Cytoscape …)</span>
+      </div>
+      <div class="flags">
+        <div class="f"><span class="k req">--input</span> <span class="v">topology.txt[.gz]</span> &nbsp;<span class="k">--output</span> <span class="v">topology.gml</span> &nbsp;<span class="k">--min-degree</span> <span class="v">N</span></div>
+        <div class="f"><span class="k">--enrich</span> (fetch AS holder names from RIPEstat) &nbsp;<span class="k">--enrich-min-degree</span> <span class="v">3</span> &nbsp;<span class="k">--concurrency</span> <span class="v">10</span></div>
+        <div class="note">Node attrs: asn (int), label (holder name or ASN string) · name cache TTL 60 days at ~/.cache/internet-topology-ris/</div>
+      </div>
+    </div>
+
+    <div class="tool">
+      <div class="tool-head">
+        <span class="tool-name">gml-to-topology.py</span>
+        <span class="tool-desc">Export GML back to two-column topology edge list (inverse of above)</span>
+      </div>
+      <div class="flags">
+        <div class="f"><span class="k req">--input</span> <span class="v">topology.gml</span> &nbsp;<span class="k">--output</span> <span class="v">topology.txt</span> &nbsp;<span class="k">--min-degree</span> <span class="v">N</span> &nbsp;<span class="k">--justify-output</span></div>
+        <div class="note">ASNs always read from node <code>asn</code> attribute — safe for enriched GML files where keys may be holder name strings</div>
+      </div>
+    </div>
+
+    <div class="tool">
+      <div class="tool-head">
+        <span class="tool-name">hubs.py</span>
+        <span class="tool-desc">List ASNs with degree ≥ N (transit, IXPs, large content providers)</span>
+      </div>
+      <div class="flags">
+        <div class="f"><span class="k req">--input</span> <span class="v">topology.txt[.gz]</span> or <span class="v">.gml</span> &nbsp;<span class="k req">--min-degree</span> <span class="v">N</span> &nbsp;<span class="k">--output</span> <span class="v">hubs.txt</span> &nbsp;<span class="k">--wide</span></div>
+        <div class="note">plain: one ASN/line sorted numerically &nbsp;·&nbsp; --wide: two cols (ASN degree) sorted by degree desc &nbsp;·&nbsp; single-pass for .txt</div>
+      </div>
+    </div>
+
+    <div class="tool">
+      <div class="tool-head">
+        <span class="tool-name">topology-core.py</span>
+        <span class="tool-desc">Extract degree-filtered core — edges where both endpoints have degree ≥ N</span>
+      </div>
+      <div class="flags">
+        <div class="f"><span class="k req">--input</span> <span class="v">topology.txt[.gz]</span> &nbsp;<span class="k req">--min-degree</span> <span class="v">N</span> &nbsp;<span class="k">--output</span> <span class="v">core.txt</span></div>
+        <div class="f"><span class="k">--wide</span> (add DEG1 DEG2 columns) &nbsp;<span class="k">--justify-output</span></div>
+        <div class="note">Two-pass, no GML needed · output is a valid topology file</div>
+      </div>
+    </div>
+
+    <div class="tool">
+      <div class="tool-head">
+        <span class="tool-name">geo-filter.py</span>
+        <span class="tool-desc">Filter to edges where both ASNs are assigned to the given countries</span>
+      </div>
+      <div class="flags">
+        <div class="f"><span class="k req">--input</span> <span class="v">topology.txt[.gz]</span> or <span class="v">.gml</span> &nbsp;<span class="k req">--countries</span> <span class="v">UY,AR,BR</span> &nbsp;<span class="k">--output</span> <span class="v">base</span></div>
+        <div class="f"><span class="k">--date</span> <span class="v">YYYYMMDD</span> (historical NRO snapshot) &nbsp;<span class="k">--justify-output</span></div>
+        <div class="note">Always produces .txt + .gml (nodes carry <code>country</code> attr) · ASNs not in NRO file are excluded · ISO 3166-1 alpha-2</div>
+      </div>
+    </div>
+
+    <div class="tool">
+      <div class="tool-head">
+        <span class="tool-name">annotate-topology.py</span>
+        <span class="tool-desc">Add country + RIR columns to every edge</span>
+      </div>
+      <div class="flags">
+        <div class="f"><span class="k req">--input</span> <span class="v">topology.txt[.gz]</span> &nbsp;<span class="k">--output</span> <span class="v">topology-annotated.txt</span> &nbsp;<span class="k">--date</span> <span class="v">YYYYMMDD</span> &nbsp;<span class="k">--justify-output</span></div>
+        <div class="note">Output: <code>6057 3359 uy lacnic us arin</code> &nbsp;·&nbsp; Unknown/private ASNs → <code>unknown unknown</code></div>
+        <div class="note">RIR names: arin · ripencc · apnic · lacnic · afrinic &nbsp;·&nbsp; Country codes lowercase ISO 3166-1 alpha-2</div>
+      </div>
+    </div>
+
+    <div class="tool">
+      <div class="tool-head">
+        <span class="tool-name">asn-presence.py</span>
+        <span class="tool-desc">Build day-by-day ASN presence matrix from topology -asns files</span>
+      </div>
+      <div class="flags">
+        <div class="f"><span class="k req">--input</span> <span class="v">"output/*/-asns.txt"</span> (repeatable) &nbsp;<span class="k">--output</span> <span class="v">asn-presence.txt</span></div>
+        <div class="note">One row per ASN, one col per date, values 0/1 · header: ASN YYYYMMDD … · ASNs zero-padded to 8 digits</div>
+        <div class="note">pandas: <code>pd.read_csv("asn-presence.txt", sep=r"\s+", index_col=0, dtype=int)</code></div>
+      </div>
+    </div>
+
+    <div class="foot">
+      <strong>NRO delegated stats</strong> (geo-filter, annotate-topology, build-topology --filter-registered)<br>
+      Cached next to input: <code>nro-delegated-stats</code> (latest, re-fetched if &gt;24 h old) &nbsp;·&nbsp; <code>nro-delegated-stats-YYYYMMDD</code> (historical, permanent)<br>
+      <strong>AS path rules</strong> (extract-paths): prepending collapsed (A A B → A B) &nbsp;·&nbsp;
+      AS sets truncate path &nbsp;·&nbsp; edges stored as <code>(min, max)</code> integer pair — not lexicographic &nbsp;·&nbsp; bview-only (no intraday updates)
+    </div>
+  </div>
+
+</div><!-- .cols -->
+
+<div class="produced">Produced: 2026-10-12</div>
+
+</div><!-- .page -->
+</body>
+</html>

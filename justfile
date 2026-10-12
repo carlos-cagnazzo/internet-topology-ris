@@ -20,106 +20,157 @@
 #   just date=20240101 collectors=rrc00-rrc25 download
 #   just date=20240101 process
 #   just date=20240101 topology
-#   just date=20240101 full-day
+#
+# Fleet / distributed use:
+#   On each node: just date=20240101 collectors=<slice> slice
+#   Then rsync path files back and run: just date=20240101 topology
 
 collectors := "rrc00"
 date       := ""
 mrt_dir    := "./mrt"
 paths_dir  := "./paths"
-output_dir := "./output"
+output_dir := "./output-combined"
 output     := "topology-" + date + ".txt"
 output_v4  := "topology-" + date + "-v4.txt"
 output_v6  := "topology-" + date + "-v6.txt"
 pubpoint   := "/var/www/html/topo"
+jobs       := "2"
+workers    := ""
+paths      := ""
+no_justify := ""
 
 # List available recipes
 default:
     @just --list
 
-# Run the full pipeline: download → process → topology
+# Run the full pipeline: download (RIS + RouteViews) → process → topology
 pipeline: (download) (download-routeviews) (process) (topology)
 
 # Step 1a — Download bview RIB snapshots from RIS collectors
 download:
-    uv run get-mrt.py \
+    ./run.sh get-mrt.py \
         --collectors {{ collectors }} \
         --date {{ date }} \
         --output-dir {{ mrt_dir }}/{{ date }}
 
 # Step 1b — Download RIB snapshots from RouteViews collectors
+# This is a working subset of ~40 available collectors.
+# To add more, extend the --collectors list below.
+# Full collector index: https://www.routeviews.org/routeviews/index.php/collectors/
 download-routeviews:
-    uv run get-routeviews.py \
+    ./run.sh get-routeviews.py \
         --collectors route-views.amsix,ix-br2.gru,namex.fco,route-views2,route-views.sg,\
                      crix.sjo,hkix.hkg,route-views.chicago,route-views.kixp,route-views.rio,route-views.perth,pacwave.lax \
         --date {{ date }} \
         --output-dir {{ mrt_dir }}/{{ date }}
 
-# Full-day pipeline: ris-day per collector (sequential, to bound disk usage) → routeviews → process → topology
-full-day:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    if [ -z "{{ date }}" ]; then
-        echo "Error: date is required. Usage: just date=YYYYMMDD full-day" >&2
-        exit 1
-    fi
-    for C in rrc00 rrc01 rrc02 rrc03 rrc04 rrc05 rrc06 rrc07 rrc10 rrc11 \
-              rrc12 rrc13 rrc14 rrc15 rrc16 rrc18 rrc19 rrc20 rrc21 rrc22 \
-              rrc23 rrc24 rrc25; do
-        just date={{ date }} collectors=$C ris-day
-    done
-    just date={{ date }} download-routeviews
-    just date={{ date }} process
-    just date={{ date }} topology
-
-# Step 1c — Download and process a full day of RIS data (bview + all updates) per collector
-ris-day:
-    uv run download-ris-day.py \
-        --collectors {{ collectors }} \
-        --date {{ date }} \
-        --mrt-dir {{ mrt_dir }} \
-        --output-dir {{ paths_dir }}
-
 # Step 2 — Extract AS paths from downloaded MRT files (handles .gz and .bz2)
 process:
-    uv run extract-paths.py \
+    ./run.sh extract-paths.py \
         --input-files "{{ mrt_dir }}/{{ date }}/*.gz" \
         --output-dir {{ paths_dir }}/{{ date }}
-    uv run extract-paths.py \
+    ./run.sh extract-paths.py \
         --input-files "{{ mrt_dir }}/{{ date }}/*.bz2" \
         --output-dir {{ paths_dir }}/{{ date }}
+
+# Fleet slice: download (RIS + RouteViews) + process for the given date and collectors.
+# Each node is self-contained: downloads both RIS and RouteViews for its assigned dates.
+slice: (download) (download-routeviews) (process)
+
+# Dispatch slice jobs to fleet nodes (reads assignments.csv + fleet.csv)
+dispatch:
+    ./fleet/dispatch.sh {{ jobs }}
+
+# Report per-date slice status for all fleet nodes
+status:
+    ./fleet/status.sh
+
+# Collect path files from all fleet nodes into ./paths/<date>/ (reads fleet.csv)
+collect:
+    ./fleet/collect.sh '{{ date }}' {{ jobs }}
 
 # Step 3 — Build combined + per-AF topology edge lists
 topology: (topology-combined) (topology-v4) (topology-v6)
 
 # Step 3a — Combined topology (all prefixes)
+# date accepts a glob: just date='202607*' topology-combined
+# workers controls parallelism/memory: just workers=2 topology-combined
+# paths writes a consolidated paths file: just paths=1 topology-combined
 topology-combined:
-    uv run build-topology.py \
+    #!/usr/bin/env bash
+    set -euo pipefail
+    safe="{{ date }}"; safe="${safe//[\*\?\[\]]/}"
+    date_flag="";    [[ "{{ date }}"    =~ ^[0-9]{8}$ ]] && date_flag="--date {{ date }}"
+    workers_flag=""; [[ -n "{{ workers }}" ]]             && workers_flag="--workers {{ workers }}"
+    paths_flag="";   [[ -n "{{ paths }}" ]]               && paths_flag="--paths"
+    mkdir -p "{{ output_dir }}/${safe}"
+    ./run.sh build-topology.py \
         --justify-output \
         --filter-registered \
-        --date {{ date }} \
-        --input "{{ paths_dir }}/{{ date }}/*.gz.txt" \
-        --input "{{ paths_dir }}/{{ date }}/*.bz2.txt" \
-        --output {{ output_dir }}/{{ date }}/{{ output }}
+        $date_flag $workers_flag $paths_flag \
+        --input "{{ paths_dir }}/{{ date }}/combined/*.txt.gz" \
+        --output "{{ output_dir }}/${safe}/topology-${safe}.txt"
 
 # Step 3b — IPv4-only topology
+# date accepts a glob: just date='202607*' topology-v4
+# workers controls parallelism/memory: just workers=2 topology-v4
 topology-v4:
-    uv run build-topology.py \
+    #!/usr/bin/env bash
+    set -euo pipefail
+    safe="{{ date }}"; safe="${safe//[\*\?\[\]]/}"
+    date_flag="";    [[ "{{ date }}"    =~ ^[0-9]{8}$ ]] && date_flag="--date {{ date }}"
+    workers_flag=""; [[ -n "{{ workers }}" ]]             && workers_flag="--workers {{ workers }}"
+    mkdir -p "{{ output_dir }}/${safe}"
+    ./run.sh build-topology.py \
         --justify-output \
         --filter-registered \
-        --date {{ date }} \
-        --input "{{ paths_dir }}/{{ date }}/*.gz.v4.txt" \
-        --input "{{ paths_dir }}/{{ date }}/*.bz2.v4.txt" \
-        --output {{ output_dir }}/{{ date }}/{{ output_v4 }}
+        $date_flag $workers_flag \
+        --input "{{ paths_dir }}/{{ date }}/v4/*.v4.txt.gz" \
+        --output "{{ output_dir }}/${safe}/topology-${safe}-v4.txt"
 
 # Step 3c — IPv6-only topology
+# date accepts a glob: just date='202607*' topology-v6
+# workers controls parallelism/memory: just workers=2 topology-v6
 topology-v6:
-    uv run build-topology.py \
+    #!/usr/bin/env bash
+    set -euo pipefail
+    safe="{{ date }}"; safe="${safe//[\*\?\[\]]/}"
+    date_flag="";    [[ "{{ date }}"    =~ ^[0-9]{8}$ ]] && date_flag="--date {{ date }}"
+    workers_flag=""; [[ -n "{{ workers }}" ]]             && workers_flag="--workers {{ workers }}"
+    mkdir -p "{{ output_dir }}/${safe}"
+    ./run.sh build-topology.py \
         --justify-output \
         --filter-registered \
+        $date_flag $workers_flag \
+        --input "{{ paths_dir }}/{{ date }}/v6/*.v6.txt.gz" \
+        --output "{{ output_dir }}/${safe}/topology-${safe}-v6.txt"
+
+# Remove .edges and .paths.gz checkpoint sidecars left by an interrupted topology build
+# date accepts a glob: just date='202607*' clean-edges
+clean-edges:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    count=$(find "{{ paths_dir }}/{{ date }}/combined" \( -name "*.edges" -o -name "*.paths.gz" \) 2>/dev/null | wc -l | tr -d ' ')
+    if [ "$count" -eq 0 ]; then
+        echo "No .edges / .paths.gz sidecar files found under {{ paths_dir }}/{{ date }}/combined"
+        exit 0
+    fi
+    echo "Deleting ${count} checkpoint sidecar(s) under {{ paths_dir }}/{{ date }}/combined ..."
+    find "{{ paths_dir }}/{{ date }}/combined" \( -name "*.edges" -o -name "*.paths.gz" \) -delete
+    echo "Done."
+
+# Download CAIDA AS relationships for a month and extract peer-to-peer edges
+# Usage: just date=202401 caida-peers
+# Optional: just date=202401 no_justify=1 caida-peers
+caida-peers:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    justify_flag="--justify-output"
+    [[ -n "{{ no_justify }}" ]] && justify_flag="--no-justify-output"
+    ./run.sh get-caida-peers.py \
         --date {{ date }} \
-        --input "{{ paths_dir }}/{{ date }}/*.gz.v6.txt" \
-        --input "{{ paths_dir }}/{{ date }}/*.bz2.v6.txt" \
-        --output {{ output_dir }}/{{ date }}/{{ output_v6 }}
+        --output "{{ output_dir }}/{{ date }}/caida-peers-{{ date }}.txt" \
+        $justify_flag
 
 # Start JupyterLab bound to the Tailscale interface
 lab2:

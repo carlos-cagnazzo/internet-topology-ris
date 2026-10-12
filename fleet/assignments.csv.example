@@ -1,0 +1,22 @@
+# Fleet work assignments for the dispatch recipe.
+# Copy to assignments.csv (gitignored) and fill in your assignments.
+#
+# Format: hostname,start_date,end_date,collectors
+#   hostname   — must match a hostname in fleet.csv
+#   start_date — YYYYMMDD
+#   end_date   — YYYYMMDD (inclusive)
+#   collectors — RIS range notation (e.g. rrc00-rrc12)
+#
+# One line = one tmux session (slice-STARTDATE-ENDDATE) on that host.
+# The session iterates through dates serially within its range.
+# Multiple lines per host = multiple parallel sessions on that host.
+# Use discontinuous ranges freely — just add more lines.
+#
+# User and repo path are read from fleet.csv (not duplicated here).
+#
+# hostname,start_date,end_date,collectors
+node1.example.com,20260701,20260715,rrc00-rrc12
+node1.example.com,20260720,20260725,rrc00-rrc12
+node2.example.com,20260716,20260719,rrc13-rrc25
+node2.example.com,20260726,20260731,rrc13-rrc25
+mac.local,20260801,20260831,rrc00-rrc25

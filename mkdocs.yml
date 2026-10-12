@@ -1,0 +1,67 @@
+site_name: Internet Topology Pipeline
+site_description: Reconstruct Internet AS-level topology from RIPE RIS and RouteViews MRT files
+site_url: https://carlos-cagnazzo.github.io/internet-topology-ris
+repo_url: https://github.com/carlos-cagnazzo/internet-topology-ris
+repo_name: carlos-cagnazzo/internet-topology-ris
+copyright: Carlos Martinez · LACNIC · Updated 2026-10-12
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.top
+    - navigation.sections
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+  icon:
+    repo: fontawesome/brands/github
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc:
+      permalink: true
+  - attr_list
+  - def_list
+
+nav:
+  - Home: index.md
+  - Quick Start: quickstart.md
+  - Installation: install.md
+  - Pipeline:
+    - Overview: pipeline/index.md
+    - Download: pipeline/download.md
+    - Extract Paths: pipeline/extract.md
+    - Build Topology: pipeline/topology.md
+    - CAIDA Peers: pipeline/caida-peers.md
+  - Fleet Workflow: fleet.md
+  - Analysis Tools:
+    - Overview: analysis/index.md
+    - Conversion: analysis/conversion.md
+    - Filtering & Core: analysis/filtering.md
+    - Analysis: analysis/analysis.md
+  - Reference: reference.md
