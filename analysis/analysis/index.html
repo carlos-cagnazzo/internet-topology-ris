@@ -10,7 +10,7 @@
       
       
       
-        <link rel="canonical" href="https://carlos-cagnazzo.github.io/internet-topology-ris/graph-analysis/analysis/">
+        <link rel="canonical" href="https://carlos-cagnazzo.github.io/internet-topology-ris/analysis/analysis/">
       
       
         <link rel="prev" href="../filtering/">
@@ -329,7 +329,7 @@
           
   
   
-  Graph Analysis
+  Analysis Tools
 
         </a>
       </li>
@@ -646,6 +646,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline/caida-peers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CAIDA Peers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -715,7 +743,7 @@
   <span class="md-ellipsis">
     
   
-    Graph Analysis
+    Analysis Tools
   
 
     
@@ -731,7 +759,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Graph Analysis
+    Analysis Tools
   
 
           </label>
@@ -1038,6 +1066,34 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#path-transit-freqpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        path-transit-freq.py
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="path-transit-freq.py">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#examples_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1258,6 +1314,34 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#path-transit-freqpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        path-transit-freq.py
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="path-transit-freq.py">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#examples_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1282,7 +1366,7 @@
 <hr />
 <h2 id="hubspy">hubs.py<a class="headerlink" href="#hubspy" title="Permanent link">&para;</a></h2>
 <p>Lists ASNs with degree ≥ <code>--min-degree</code> from a topology edge list or GML file. Degree is computed in a single pass for <code>.txt</code> input — no GML conversion required.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv run graph-analysis/hubs.py --input &lt;file&gt; --min-degree &lt;N&gt; [OPTIONS]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>./run.sh hubs.py --input &lt;file&gt; --min-degree &lt;N&gt; [OPTIONS]
 </code></pre></div>
 <table>
 <thead>
@@ -1318,19 +1402,19 @@
 <p>Without <code>--wide</code>: one ASN per line, sorted numerically. With <code>--wide</code>: two columns sorted by degree descending — useful for ranking.</p>
 <h3 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># List all ASNs with degree ≥ 100</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>uv<span class="w"> </span>run<span class="w"> </span>graph-analysis/hubs.py<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span>--input<span class="w"> </span>output/20260101/topology-20260101.txt<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>./run.sh<span class="w"> </span>hubs.py<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span>--input<span class="w"> </span>output-combined/20260101/topology-20260101.txt<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span>--min-degree<span class="w"> </span><span class="m">100</span>
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="c1"># Ranked by degree</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>uv<span class="w"> </span>run<span class="w"> </span>graph-analysis/hubs.py<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">  </span>--input<span class="w"> </span>output/20260101/topology-20260101.txt<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>./run.sh<span class="w"> </span>hubs.py<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">  </span>--input<span class="w"> </span>output-combined/20260101/topology-20260101.txt<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">  </span>--min-degree<span class="w"> </span><span class="m">50</span><span class="w"> </span>--wide
 </code></pre></div>
 <hr />
 <h2 id="annotate-topologypy">annotate-topology.py<a class="headerlink" href="#annotate-topologypy" title="Permanent link">&para;</a></h2>
 <p>Enriches a topology edge list by appending four columns to each edge: <code>cc1 rir1 cc2 rir2</code> — the country code and RIR for each ASN, sourced from the NRO delegated stats.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>uv run graph-analysis/annotate-topology.py --input &lt;file&gt; [OPTIONS]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>./run.sh annotate-topology.py --input &lt;file&gt; [OPTIONS]
 </code></pre></div>
 <table>
 <thead>
@@ -1372,20 +1456,20 @@
 </code></pre></div>
 <h3 id="examples_1">Examples<a class="headerlink" href="#examples_1" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Annotate with the NRO snapshot matching the topology date</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>uv<span class="w"> </span>run<span class="w"> </span>graph-analysis/annotate-topology.py<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span>--input<span class="w"> </span>output/20260101/topology-20260101.txt<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>./run.sh<span class="w"> </span>annotate-topology.py<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span>--input<span class="w"> </span>output-combined/20260101/topology-20260101.txt<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span>--date<span class="w"> </span><span class="m">20260101</span>
 <a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
 <a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="c1"># With zero-padding</span>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>uv<span class="w"> </span>run<span class="w"> </span>graph-analysis/annotate-topology.py<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">  </span>--input<span class="w"> </span>output/20260101/topology-20260101.txt<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">  </span>--output<span class="w"> </span>output/20260101/topology-20260101-annotated.txt<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>./run.sh<span class="w"> </span>annotate-topology.py<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">  </span>--input<span class="w"> </span>output-combined/20260101/topology-20260101.txt<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">  </span>--output<span class="w"> </span>output-combined/20260101/topology-20260101-annotated.txt<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">  </span>--date<span class="w"> </span><span class="m">20260101</span><span class="w"> </span>--justify-output
 </code></pre></div>
 <hr />
 <h2 id="asn-presencepy">asn-presence.py<a class="headerlink" href="#asn-presencepy" title="Permanent link">&para;</a></h2>
 <p>Builds a day-by-day ASN presence matrix from <code>{stem}-asns-YYYYMMDD.txt</code> files produced by <code>build-topology.py</code>. One row per unique ASN, one column per date, values <code>0</code>/<code>1</code>.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>uv run graph-analysis/asn-presence.py --input &lt;glob&gt; [--output &lt;file&gt;]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>./run.sh asn-presence.py --input &lt;glob&gt; [--output &lt;file&gt;]
 </code></pre></div>
 <table>
 <thead>
@@ -1414,14 +1498,14 @@
 <a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;asn-presence.txt&quot;</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;\s+&quot;</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="examples_2">Examples<a class="headerlink" href="#examples_2" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>uv<span class="w"> </span>run<span class="w"> </span>graph-analysis/asn-presence.py<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span>--input<span class="w"> </span><span class="s2">&quot;output/*/topology-*-asns.txt&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span>--output<span class="w"> </span>output/asn-presence.txt
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>./run.sh<span class="w"> </span>asn-presence.py<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span>--input<span class="w"> </span><span class="s2">&quot;output-combined/*/topology-*-asns.txt&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span>--output<span class="w"> </span>output-combined/asn-presence.txt
 </code></pre></div>
 <hr />
 <h2 id="topology-opspy">topology-ops.py<a class="headerlink" href="#topology-opspy" title="Permanent link">&para;</a></h2>
 <p>Set operations on two or more topology edge list files. Both plain (<code>6 22773</code>) and zero-padded (<code>00000006 00022773</code>) formats are handled; comparison is always numeric.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>uv run topology-ops.py --op &lt;add|sub&gt; --output &lt;file&gt; [--justify-output] FILE [FILE ...]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>./run.sh topology-ops.py --op &lt;add|sub&gt; --output &lt;file&gt; [--justify-output] FILE [FILE ...]
 </code></pre></div>
 <table>
 <thead>
@@ -1455,24 +1539,24 @@
 </table>
 <h3 id="examples_3">Examples<a class="headerlink" href="#examples_3" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># Merge three dates</span>
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>uv<span class="w"> </span>run<span class="w"> </span>topology-ops.py<span class="w"> </span>--op<span class="w"> </span>add<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span>--output<span class="w"> </span>output/combined.txt<span class="w"> </span>--justify-output<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">  </span>output/20260101/topology-20260101.txt<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">  </span>output/20260201/topology-20260201.txt<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="w">  </span>output/20260301/topology-20260301.txt
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>./run.sh<span class="w"> </span>topology-ops.py<span class="w"> </span>--op<span class="w"> </span>add<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span>--output<span class="w"> </span>output-combined/combined.txt<span class="w"> </span>--justify-output<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">  </span>output-combined/20260101/topology-20260101.txt<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">  </span>output-combined/20260201/topology-20260201.txt<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="w">  </span>output-combined/20260301/topology-20260301.txt
 <a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>
 <a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="c1"># Links present in January but gone by March</span>
-<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>uv<span class="w"> </span>run<span class="w"> </span>topology-ops.py<span class="w"> </span>--op<span class="w"> </span>sub<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="w">  </span>--output<span class="w"> </span>output/disappeared.txt<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="w">  </span>output/20260101/topology-20260101.txt<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="w">  </span>output/20260301/topology-20260301.txt
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>./run.sh<span class="w"> </span>topology-ops.py<span class="w"> </span>--op<span class="w"> </span>sub<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="w">  </span>--output<span class="w"> </span>output-combined/disappeared.txt<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="w">  </span>output-combined/20260101/topology-20260101.txt<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="w">  </span>output-combined/20260301/topology-20260301.txt
 </code></pre></div>
 <hr />
 <h2 id="lookup-aspy">lookup-as.py<a class="headerlink" href="#lookup-aspy" title="Permanent link">&para;</a></h2>
 <p>Queries the <a href="https://stat.ripe.net/docs/data_api">RIPEstat Data API</a> for one or more ASNs. Returns AS holder name, announced prefix count, last-seen timestamp, and announced status.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>uv run lookup-as.py --asn &lt;N&gt;
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>uv run lookup-as.py --file &lt;file&gt;
-<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>cat asns.txt | uv run lookup-as.py
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>./run.sh lookup-as.py --asn &lt;N&gt;
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>./run.sh lookup-as.py --file &lt;file&gt;
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>cat asns.txt | ./run.sh lookup-as.py
 </code></pre></div>
 <table>
 <thead>
@@ -1508,17 +1592,59 @@
 <p>Batch mode shows a live progress bar. Results are displayed as a rich table.</p>
 <h3 id="examples_4">Examples<a class="headerlink" href="#examples_4" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># Single ASN</span>
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>uv<span class="w"> </span>run<span class="w"> </span>lookup-as.py<span class="w"> </span>--asn<span class="w"> </span><span class="m">15169</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>./run.sh<span class="w"> </span>lookup-as.py<span class="w"> </span>--asn<span class="w"> </span><span class="m">15169</span>
 <a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
 <a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="c1"># Batch from the dropped-ASNs list</span>
-<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>uv<span class="w"> </span>run<span class="w"> </span>lookup-as.py<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">  </span>--file<span class="w"> </span>output/20260101/topology-20260101-dropped-asns.txt<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="w">  </span>--output<span class="w"> </span>output/20260101/dropped-asns-info.tsv
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>./run.sh<span class="w"> </span>lookup-as.py<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">  </span>--file<span class="w"> </span>output-combined/20260101/topology-20260101-dropped-asns.txt<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="w">  </span>--output<span class="w"> </span>output-combined/20260101/dropped-asns-info.tsv
 <a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>
 <a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="c1"># Pipe the hub list</span>
-<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a>uv<span class="w"> </span>run<span class="w"> </span>graph-analysis/hubs.py<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="w">  </span>--input<span class="w"> </span>output/20260101/topology-20260101.txt<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="w">  </span>--min-degree<span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>lookup-as.py
+<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a>./run.sh<span class="w"> </span>hubs.py<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="w">  </span>--input<span class="w"> </span>output-combined/20260101/topology-20260101.txt<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="w">  </span>--min-degree<span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>./run.sh<span class="w"> </span>lookup-as.py
+</code></pre></div>
+<hr />
+<h2 id="path-transit-freqpy">path-transit-freq.py<a class="headerlink" href="#path-transit-freqpy" title="Permanent link">&para;</a></h2>
+<p>Counts how often each AS appears as a transit hop across all paths in a file. The first ASN (sensor) and last ASN (origin) of each path are ignored; intermediate ASNs are deduplicated per path to collapse prepends.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>./run.sh path-transit-freq.py --input &lt;file&gt; [OPTIONS]
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--input</code></td>
+<td>required</td>
+<td>Path file (<code>.txt</code> or <code>.txt.gz</code>)</td>
+</tr>
+<tr>
+<td><code>--output</code></td>
+<td>input stem + <code>-transit-freq.txt</code></td>
+<td>Output file</td>
+</tr>
+<tr>
+<td><code>--justify-output</code> / <code>--no-justify-output</code></td>
+<td>on</td>
+<td>Zero-pad ASNs to 8 digits</td>
+</tr>
+</tbody>
+</table>
+<p>Output is sorted by frequency descending. Paths with ≤2 ASNs (no transit hop) are skipped and counted; the total is reported on exit.</p>
+<h3 id="examples_5">Examples<a class="headerlink" href="#examples_5" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># Analyse a combined path file</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>./run.sh<span class="w"> </span>path-transit-freq.py<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">  </span>--input<span class="w"> </span>paths/20260101/combined/bview.rrc00.20260101.0000.txt.gz
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="c1"># Without zero-padding</span>
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>./run.sh<span class="w"> </span>path-transit-freq.py<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="w">  </span>--input<span class="w"> </span>paths/20260101/combined/bview.rrc00.20260101.0000.txt.gz<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="w">  </span>--no-justify-output
 </code></pre></div>
 
 
@@ -1555,7 +1681,7 @@
       <div class="md-copyright">
   
     <div class="md-copyright__highlight">
-      Carlos Martinez · LACNIC
+      Carlos Martinez · LACNIC · Updated 2026-10-12
     </div>
   
   

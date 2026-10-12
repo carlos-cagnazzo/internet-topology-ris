@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://carlos-cagnazzo.github.io/internet-topology-ris/graph-analysis/conversion/">
+        <link rel="canonical" href="https://carlos-cagnazzo.github.io/internet-topology-ris/pipeline/caida-peers/">
       
       
-        <link rel="prev" href="../">
+        <link rel="prev" href="../topology/">
       
       
-        <link rel="next" href="../filtering/">
+        <link rel="next" href="../../fleet/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Conversion - Internet Topology Pipeline</title>
+        <title>CAIDA Peers - Internet Topology Pipeline</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#conversion-tools" class="md-skip">
+        <a href="#caida-as-relationships" class="md-skip">
           Skip to content
         </a>
       
@@ -112,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Conversion
+              CAIDA Peers
             
           </span>
         </div>
@@ -280,11 +280,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../pipeline/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
           
   
   
@@ -319,17 +321,15 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../analysis/" class="md-tabs__link">
           
   
   
-  Graph Analysis
+  Analysis Tools
 
         </a>
       </li>
@@ -486,26 +486,31 @@
       
   
   
+    
   
   
+  
     
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
             
   
   
@@ -523,7 +528,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -541,7 +546,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../pipeline/" class="md-nav__link">
+      <a href="../" class="md-nav__link">
         
   
   
@@ -569,7 +574,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../pipeline/download/" class="md-nav__link">
+      <a href="../download/" class="md-nav__link">
         
   
   
@@ -597,7 +602,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../pipeline/extract/" class="md-nav__link">
+      <a href="../extract/" class="md-nav__link">
         
   
   
@@ -625,7 +630,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../pipeline/topology/" class="md-nav__link">
+      <a href="../topology/" class="md-nav__link">
         
   
   
@@ -641,6 +646,186 @@
   
 
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CAIDA Peers
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CAIDA Peers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#flags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Flags
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#datasets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Datasets
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#relationship-codes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Relationship codes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#caching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Caching
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#output-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output files
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Output files">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#peer-edge-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Peer edge list
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#potential-tier-1-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Potential Tier 1 list
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#justfile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Justfile
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Examples
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -684,38 +869,33 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
             
   
   
   <span class="md-ellipsis">
     
   
-    Graph Analysis
+    Analysis Tools
   
 
     
@@ -726,12 +906,12 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
   
-    Graph Analysis
+    Analysis Tools
   
 
           </label>
@@ -744,7 +924,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../" class="md-nav__link">
+      <a href="../../analysis/" class="md-nav__link">
         
   
   
@@ -769,37 +949,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Conversion
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../analysis/conversion/" class="md-nav__link">
         
   
   
@@ -815,82 +968,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#topology-to-gmlpy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        topology-to-gml.py
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="topology-to-gml.py">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#examples" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Examples
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#gml-to-topologypy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        gml-to-topology.py
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="gml-to-topology.py">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#examples_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Examples
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -903,7 +980,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../filtering/" class="md-nav__link">
+      <a href="../../analysis/filtering/" class="md-nav__link">
         
   
   
@@ -931,7 +1008,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../analysis/" class="md-nav__link">
+      <a href="../../analysis/analysis/" class="md-nav__link">
         
   
   
@@ -1013,22 +1090,77 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#topology-to-gmlpy" class="md-nav__link">
+  <a href="#flags" class="md-nav__link">
     <span class="md-ellipsis">
       
-        topology-to-gml.py
+        Flags
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="topology-to-gml.py">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#datasets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Datasets
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#relationship-codes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Relationship codes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#caching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Caching
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#output-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output files
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Output files">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#examples" class="md-nav__link">
+  <a href="#peer-edge-list" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Examples
+        Peer edge list
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#potential-tier-1-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Potential Tier 1 list
       
     </span>
   </a>
@@ -1041,30 +1173,24 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#gml-to-topologypy" class="md-nav__link">
+  <a href="#justfile" class="md-nav__link">
     <span class="md-ellipsis">
       
-        gml-to-topology.py
+        Justfile
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="gml-to-topology.py">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#examples_1" class="md-nav__link">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
     <span class="md-ellipsis">
       
         Examples
       
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1088,13 +1214,12 @@
   
 
 
-<h1 id="conversion-tools">Conversion Tools<a class="headerlink" href="#conversion-tools" title="Permanent link">&para;</a></h1>
-<p>Tools for converting between topology edge list format and GML.</p>
-<hr />
-<h2 id="topology-to-gmlpy">topology-to-gml.py<a class="headerlink" href="#topology-to-gmlpy" title="Permanent link">&para;</a></h2>
-<p>Converts a topology edge list (<code>.txt</code>) to a <a href="https://en.wikipedia.org/wiki/Graph_Modelling_Language">GML</a> file for import into Gephi, yEd, Cytoscape, or any graph tool that reads GML.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv run graph-analysis/topology-to-gml.py --input &lt;file&gt; [OPTIONS]
+<h1 id="caida-as-relationships">CAIDA AS Relationships<a class="headerlink" href="#caida-as-relationships" title="Permanent link">&para;</a></h1>
+<p><code>get-caida-peers.py</code> downloads the <a href="https://publicdata.caida.org/datasets/as-relationships/">CAIDA AS Relationships dataset</a> for a given month and extracts all peer-to-peer edges (relationship code <code>0</code>). The result is a deduplicated, sorted two-column edge list in the same format as the BGP-derived topology.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>./run.sh get-caida-peers.py --date YYYYMM [OPTIONS]
 </code></pre></div>
+<hr />
+<h2 id="flags">Flags<a class="headerlink" href="#flags" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
@@ -1105,94 +1230,136 @@
 </thead>
 <tbody>
 <tr>
-<td><code>--input</code></td>
+<td><code>--date</code></td>
 <td>required</td>
-<td>Topology edge list (<code>.txt</code> or <code>.txt.gz</code>)</td>
+<td>Year-month to fetch, <code>YYYYMM</code> format</td>
 </tr>
 <tr>
 <td><code>--output</code></td>
-<td>input with <code>.gml</code> extension</td>
-<td>Output GML file</td>
+<td><code>./output-combined/YYYYMM/caida-peers-YYYYMM.txt</code></td>
+<td>Output file path</td>
 </tr>
 <tr>
-<td><code>--min-degree</code></td>
-<td><code>3</code></td>
-<td>Filter: only include edges where both endpoints have degree ≥ N</td>
-</tr>
-<tr>
-<td><code>--enrich</code></td>
-<td>off</td>
-<td>Fetch AS holder names from RIPEstat and use as node labels</td>
-</tr>
-<tr>
-<td><code>--enrich-min-degree</code></td>
-<td><code>3</code></td>
-<td>Only enrich nodes with degree ≥ N (cheaper than enriching all nodes)</td>
-</tr>
-</tbody>
-</table>
-<p>When <code>--enrich</code> is active, holder names are fetched from the RIPEstat API and cached at <code>~/.cache/internet-topology-ris/as-names.json</code> with a 60-day TTL. Nodes below <code>--enrich-min-degree</code> keep their ASN as label.</p>
-<p>To produce a <strong>filtered edge list</strong> (<code>.txt</code>) rather than a GML, use <code>topology-core.py</code> instead.</p>
-<h3 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Basic conversion, no filtering</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>uv<span class="w"> </span>run<span class="w"> </span>graph-analysis/topology-to-gml.py<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span>--input<span class="w"> </span>output/20260101/topology-20260101.txt
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="c1"># Filter to core (degree ≥ 5) + enrich labels for well-connected nodes</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>uv<span class="w"> </span>run<span class="w"> </span>graph-analysis/topology-to-gml.py<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">  </span>--input<span class="w"> </span>output/20260101/topology-20260101.txt<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">  </span>--output<span class="w"> </span>output/20260101/topology-core5.gml<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">  </span>--min-degree<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">  </span>--enrich<span class="w"> </span>--enrich-min-degree<span class="w"> </span><span class="m">20</span>
-</code></pre></div>
-<hr />
-<h2 id="gml-to-topologypy">gml-to-topology.py<a class="headerlink" href="#gml-to-topologypy" title="Permanent link">&para;</a></h2>
-<p>Inverse of <code>topology-to-gml.py</code>. Reads a GML file and writes a two-column topology edge list. Useful for round-tripping through Gephi (e.g. after manual layout or community detection).</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>uv run graph-analysis/gml-to-topology.py --input &lt;file&gt; [OPTIONS]
-</code></pre></div>
-<table>
-<thead>
-<tr>
-<th>Flag</th>
-<th>Default</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--input</code></td>
-<td>required</td>
-<td>GML file</td>
-</tr>
-<tr>
-<td><code>--output</code></td>
-<td>input with <code>.txt</code> extension</td>
-<td>Output edge list</td>
-</tr>
-<tr>
-<td><code>--min-degree</code></td>
-<td><em>(none)</em></td>
-<td>Optional: filter to edges where both endpoints have degree ≥ N</td>
-</tr>
-<tr>
-<td><code>--justify-output</code></td>
-<td>off</td>
+<td><code>--justify-output</code> / <code>--no-justify-output</code></td>
+<td>on</td>
 <td>Zero-pad ASNs to 8 digits</td>
 </tr>
+<tr>
+<td><code>--cache-dir</code></td>
+<td><code>./caida-cache</code></td>
+<td>Where to store downloaded <code>.bz2</code> files</td>
+</tr>
 </tbody>
 </table>
-<p>ASNs are always read from the node <code>asn</code> attribute (safe for enriched GML files that carry string labels).</p>
-<h3 id="examples_1">Examples<a class="headerlink" href="#examples_1" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Round-trip: convert back from Gephi export</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>uv<span class="w"> </span>run<span class="w"> </span>graph-analysis/gml-to-topology.py<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span>--input<span class="w"> </span>output/20260101/topology-gephi.gml<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span>--output<span class="w"> </span>output/20260101/topology-gephi.txt
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="c1"># With degree filter</span>
-<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>uv<span class="w"> </span>run<span class="w"> </span>graph-analysis/gml-to-topology.py<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">  </span>--input<span class="w"> </span>output/20260101/topology.gml<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">  </span>--min-degree<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">  </span>--justify-output
+<hr />
+<h2 id="datasets">Datasets<a class="headerlink" href="#datasets" title="Permanent link">&para;</a></h2>
+<p>CAIDA publishes two dataset series, both available at no cost:</p>
+<table>
+<thead>
+<tr>
+<th>Series</th>
+<th>Coverage</th>
+<th>File pattern</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>serial-2</strong></td>
+<td>~2012 – present</td>
+<td><code>YYYYMMDD.as-rel2.txt.bz2</code></td>
+</tr>
+<tr>
+<td><strong>serial-1</strong></td>
+<td>~1998 – 2013</td>
+<td><code>YYYYMMDD.as-rel.txt.bz2</code></td>
+</tr>
+</tbody>
+</table>
+<p>The tool <strong>prefers serial-2</strong>. If no serial-2 file exists for the requested month (pre-2012 data), it falls back to serial-1. File names within a month are not predictable (not always the 1st of the month), so the tool fetches the directory index to discover the correct filename.</p>
+<hr />
+<h2 id="relationship-codes">Relationship codes<a class="headerlink" href="#relationship-codes" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Meaning</th>
+<th>Included?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0</code></td>
+<td>Peer-to-peer</td>
+<td>✓</td>
+</tr>
+<tr>
+<td><code>-1</code></td>
+<td>Provider → customer</td>
+<td>✗</td>
+</tr>
+</tbody>
+</table>
+<p>Only <code>rel=0</code> edges are written to output. Provider-customer relationships are discarded.</p>
+<hr />
+<h2 id="caching">Caching<a class="headerlink" href="#caching" title="Permanent link">&para;</a></h2>
+<p>Downloaded <code>.bz2</code> files are cached permanently in <code>--cache-dir</code> (default <code>./caida-cache/</code>, gitignored). CAIDA files are immutable once published — a cached file is always reused without re-downloading.</p>
+<hr />
+<h2 id="output-files">Output files<a class="headerlink" href="#output-files" title="Permanent link">&para;</a></h2>
+<p>Two files are always written to the same directory:</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Contents</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>caida-peers-YYYYMM.txt</code></td>
+<td>Peer-to-peer edge list (rel=0)</td>
+</tr>
+<tr>
+<td><code>caida-tier1-YYYYMM.txt</code></td>
+<td>Potential Tier 1 ASNs — one ASN per line</td>
+</tr>
+</tbody>
+</table>
+<h3 id="peer-edge-list">Peer edge list<a class="headerlink" href="#peer-edge-list" title="Permanent link">&para;</a></h3>
+<p>One undirected edge per line, smaller ASN first, sorted numerically:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>00000001 00005467
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>00000001 00008641
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>00001299 00003356
+</code></pre></div>
+<h3 id="potential-tier-1-list">Potential Tier 1 list<a class="headerlink" href="#potential-tier-1-list" title="Permanent link">&para;</a></h3>
+<p>ASNs that provide transit to others (appear as provider in a rel=-1 relationship) but never buy transit themselves (never appear as customer). These are <strong>provider-free transit networks</strong> — the operational definition of Tier 1.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>00000174
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>00000701
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>00001299
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>00003356
+</code></pre></div>
+<p>The list typically contains ~100–200 ASNs: the ~20 globally recognised Tier 1 networks plus regional/national networks that are provider-free in their own market. Networks that are widely considered Tier 1 but appear as a customer in at least one CAIDA-inferred relationship (e.g. Hurricane Electric, AS6939) will be absent.</p>
+<p>Plain integers (no zero-padding) with <code>--no-justify-output</code>.</p>
+<hr />
+<h2 id="justfile">Justfile<a class="headerlink" href="#justfile" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Fetch peer relationships for a month</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>just<span class="w"> </span><span class="nv">date</span><span class="o">=</span><span class="m">202401</span><span class="w"> </span>caida-peers
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Without zero-padding</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>just<span class="w"> </span><span class="nv">date</span><span class="o">=</span><span class="m">202401</span><span class="w"> </span><span class="nv">no_justify</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>caida-peers
+</code></pre></div>
+<hr />
+<h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># January 2024 — uses serial-2</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>./run.sh<span class="w"> </span>get-caida-peers.py<span class="w"> </span>--date<span class="w"> </span><span class="m">202401</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># January 2005 — falls back to serial-1</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>./run.sh<span class="w"> </span>get-caida-peers.py<span class="w"> </span>--date<span class="w"> </span><span class="m">200501</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="c1"># Override output path, no zero-padding</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>./run.sh<span class="w"> </span>get-caida-peers.py<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">  </span>--date<span class="w"> </span><span class="m">202401</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">  </span>--output<span class="w"> </span>./my-peers-202401.txt<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">  </span>--no-justify-output
 </code></pre></div>
 
 
@@ -1229,7 +1396,7 @@
       <div class="md-copyright">
   
     <div class="md-copyright__highlight">
-      Carlos Martinez · LACNIC
+      Carlos Martinez · LACNIC · Updated 2026-10-12
     </div>
   
   

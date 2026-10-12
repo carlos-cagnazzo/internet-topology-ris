@@ -13,10 +13,10 @@
         <link rel="canonical" href="https://carlos-cagnazzo.github.io/internet-topology-ris/fleet/">
       
       
-        <link rel="prev" href="../pipeline/topology/">
+        <link rel="prev" href="../pipeline/caida-peers/">
       
       
-        <link rel="next" href="../graph-analysis/">
+        <link rel="next" href="../analysis/">
       
       
         
@@ -325,11 +325,11 @@
     
     
       <li class="md-tabs__item">
-        <a href="../graph-analysis/" class="md-tabs__link">
+        <a href="../analysis/" class="md-tabs__link">
           
   
   
-  Graph Analysis
+  Analysis Tools
 
         </a>
       </li>
@@ -646,6 +646,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/caida-peers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CAIDA Peers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -895,7 +923,7 @@
   <span class="md-ellipsis">
     
   
-    Graph Analysis
+    Analysis Tools
   
 
     
@@ -911,7 +939,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Graph Analysis
+    Analysis Tools
   
 
           </label>
@@ -924,7 +952,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../graph-analysis/" class="md-nav__link">
+      <a href="../analysis/" class="md-nav__link">
         
   
   
@@ -952,7 +980,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../graph-analysis/conversion/" class="md-nav__link">
+      <a href="../analysis/conversion/" class="md-nav__link">
         
   
   
@@ -980,7 +1008,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../graph-analysis/filtering/" class="md-nav__link">
+      <a href="../analysis/filtering/" class="md-nav__link">
         
   
   
@@ -1008,7 +1036,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../graph-analysis/analysis/" class="md-nav__link">
+      <a href="../analysis/analysis/" class="md-nav__link">
         
   
   
@@ -1265,7 +1293,7 @@
 <hr />
 <h2 id="setup">Setup<a class="headerlink" href="#setup" title="Permanent link">&para;</a></h2>
 <h3 id="1-create-fleetcsv">1. Create fleet.csv<a class="headerlink" href="#1-create-fleetcsv" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>cp<span class="w"> </span>fleet.csv.example<span class="w"> </span>fleet.csv
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>cp<span class="w"> </span>fleet/fleet.csv.example<span class="w"> </span>fleet.csv
 </code></pre></div>
 <p>Format: <code>username,hostname,/absolute/path/to/repo</code> — one machine per line.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a># username,hostname,repo_path
@@ -1273,9 +1301,9 @@
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>carlos,node2.example.com,/home/carlos/src/internet-topology-ris
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>carlos,mac.local,/Users/carlos/src/internet-topology-ris
 </code></pre></div>
-<p><code>fleet.csv</code> is gitignored — specific to your deployment. The <code>fleet.csv.example</code> template is tracked.</p>
+<p><code>fleet.csv</code> is gitignored — specific to your deployment. The <code>fleet/fleet.csv.example</code> template is tracked.</p>
 <h3 id="2-create-assignmentscsv">2. Create assignments.csv<a class="headerlink" href="#2-create-assignmentscsv" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>cp<span class="w"> </span>assignments.csv.example<span class="w"> </span>assignments.csv
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>cp<span class="w"> </span>fleet/assignments.csv.example<span class="w"> </span>assignments.csv
 </code></pre></div>
 <p>Format: <code>hostname,start_date,end_date,collectors</code> — one line per tmux session.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a># hostname,start_date,end_date,collectors
@@ -1288,7 +1316,7 @@
 <li><strong>One line = one tmux session</strong> on that host, iterating its date range serially</li>
 <li><strong>Multiple lines per host</strong> = multiple parallel sessions on that host</li>
 <li>Ranges can be discontinuous — just add more lines</li>
-<li><code>assignments.csv</code> is gitignored; edit it freely without committing</li>
+<li><code>assignments.csv</code> is gitignored; edit it freely without committing. Template at <code>fleet/assignments.csv.example</code></li>
 </ul>
 <h3 id="3-ensure-ssh-access">3. Ensure SSH access<a class="headerlink" href="#3-ensure-ssh-access" title="Permanent link">&para;</a></h3>
 <p>All machines must be reachable with a shared SSH key from the central machine:</p>
@@ -1370,7 +1398,7 @@
 </code></pre></div>
 <hr />
 <h2 id="fetching-output-files-from-remote-machines">Fetching output files from remote machines<a class="headerlink" href="#fetching-output-files-from-remote-machines" title="Permanent link">&para;</a></h2>
-<p><code>fetch-results.sh</code> collects topology <strong>output</strong> files (not path files) from remote machines via rsync into per-host subdirectories. Configure <code>SOURCES</code>, <code>INCLUDES</code>, and <code>EXCLUDE</code> at the top of the script.</p>
+<p><code>fleet/fetch-results.sh</code> collects topology <strong>output</strong> files (not path files) from remote machines via rsync into per-host subdirectories. Configure <code>SOURCES</code>, <code>INCLUDES</code>, and <code>EXCLUDE</code> at the top of the script.</p>
 <div class="admonition note">
 <p class="admonition-title">Legacy</p>
 <p><code>fetch-results.sh</code> predates the dispatch/collect workflow. It remains useful for ad-hoc collection without <code>fleet.csv</code> / <code>assignments.csv</code>.</p>
@@ -1410,7 +1438,7 @@
       <div class="md-copyright">
   
     <div class="md-copyright__highlight">
-      Carlos Martinez · LACNIC
+      Carlos Martinez · LACNIC · Updated 2026-10-12
     </div>
   
   

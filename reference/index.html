@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://carlos-cagnazzo.github.io/internet-topology-ris/reference/">
       
       
-        <link rel="prev" href="../graph-analysis/analysis/">
+        <link rel="prev" href="../analysis/analysis/">
       
       
       
@@ -321,11 +321,11 @@
     
     
       <li class="md-tabs__item">
-        <a href="../graph-analysis/" class="md-tabs__link">
+        <a href="../analysis/" class="md-tabs__link">
           
   
   
-  Graph Analysis
+  Analysis Tools
 
         </a>
       </li>
@@ -644,6 +644,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipeline/caida-peers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CAIDA Peers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -708,7 +736,7 @@
   <span class="md-ellipsis">
     
   
-    Graph Analysis
+    Analysis Tools
   
 
     
@@ -724,7 +752,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Graph Analysis
+    Analysis Tools
   
 
           </label>
@@ -737,7 +765,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../graph-analysis/" class="md-nav__link">
+      <a href="../analysis/" class="md-nav__link">
         
   
   
@@ -765,7 +793,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../graph-analysis/conversion/" class="md-nav__link">
+      <a href="../analysis/conversion/" class="md-nav__link">
         
   
   
@@ -793,7 +821,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../graph-analysis/filtering/" class="md-nav__link">
+      <a href="../analysis/filtering/" class="md-nav__link">
         
   
   
@@ -821,7 +849,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../graph-analysis/analysis/" class="md-nav__link">
+      <a href="../analysis/analysis/" class="md-nav__link">
         
   
   
@@ -1021,6 +1049,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#caida-as-relationships" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CAIDA AS Relationships
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#gitignore-summary" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1164,6 +1203,17 @@
     <span class="md-ellipsis">
       
         bgpreader
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#caida-as-relationships" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CAIDA AS Relationships
       
     </span>
   </a>
@@ -1435,6 +1485,33 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>bgpreader<span class="w"> </span>-d<span class="w"> </span>singlefile<span class="w"> </span>-o<span class="w"> </span>rib-file<span class="o">=</span>&lt;path&gt;
 </code></pre></div>
 <hr />
+<h2 id="caida-as-relationships">CAIDA AS Relationships<a class="headerlink" href="#caida-as-relationships" title="Permanent link">&para;</a></h2>
+<p>CAIDA publishes monthly AS relationship inferences derived from BGP data. The tool <code>get-caida-peers.py</code> uses these to extract peer-to-peer (p2p) edges.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>URL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Serial-2 index</td>
+<td><code>https://publicdata.caida.org/datasets/as-relationships/serial-2/</code></td>
+</tr>
+<tr>
+<td>Serial-1 index</td>
+<td><code>https://publicdata.caida.org/datasets/as-relationships/serial-1/</code></td>
+</tr>
+</tbody>
+</table>
+<p>File format (<code>|</code>-delimited, lines starting with <code>#</code> are comments):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>AS1|AS2|rel          # serial-1
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>AS1|AS2|rel|source   # serial-2
+</code></pre></div>
+<p>Relationship codes: <code>0</code> = peer-to-peer, <code>-1</code> = provider→customer. Only <code>rel=0</code> is extracted.</p>
+<p>Downloaded <code>.bz2</code> files are cached in <code>./caida-cache/</code> (gitignored). Serial-2 is preferred; serial-1 is used as fallback for pre-2012 months.</p>
+<hr />
 <h2 id="gitignore-summary">.gitignore summary<a class="headerlink" href="#gitignore-summary" title="Permanent link">&para;</a></h2>
 <p>The following are gitignored and must not be committed:</p>
 <table>
@@ -1454,8 +1531,16 @@
 <td>Extracted AS path files (large)</td>
 </tr>
 <tr>
+<td><code>output-combined/</code></td>
+<td>Generated topology and peer output files</td>
+</tr>
+<tr>
+<td><code>caida-cache/</code></td>
+<td>Cached CAIDA <code>.bz2</code> downloads</td>
+</tr>
+<tr>
 <td><code>topology*.txt</code></td>
-<td>Generated output files</td>
+<td>Any topology edge list at repo root</td>
 </tr>
 <tr>
 <td><code>nro-delegated-stats*</code></td>
@@ -1463,15 +1548,11 @@
 </tr>
 <tr>
 <td><code>fleet.csv</code></td>
-<td>Deployment-specific; copy from <code>fleet.csv.example</code></td>
+<td>Deployment-specific; copy from <code>fleet/fleet.csv.example</code></td>
 </tr>
 <tr>
 <td><code>fetch/</code></td>
 <td>Rsync staging from <code>fetch-results.sh</code></td>
-</tr>
-<tr>
-<td><code>output/</code></td>
-<td><em>(not gitignored by default — add if needed)</em></td>
 </tr>
 </tbody>
 </table>
@@ -1510,7 +1591,7 @@
       <div class="md-copyright">
   
     <div class="md-copyright__highlight">
-      Carlos Martinez · LACNIC
+      Carlos Martinez · LACNIC · Updated 2026-10-12
     </div>
   
   

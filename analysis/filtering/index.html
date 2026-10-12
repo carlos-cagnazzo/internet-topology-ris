@@ -10,7 +10,7 @@
       
       
       
-        <link rel="canonical" href="https://carlos-cagnazzo.github.io/internet-topology-ris/graph-analysis/filtering/">
+        <link rel="canonical" href="https://carlos-cagnazzo.github.io/internet-topology-ris/analysis/filtering/">
       
       
         <link rel="prev" href="../conversion/">
@@ -329,7 +329,7 @@
           
   
   
-  Graph Analysis
+  Analysis Tools
 
         </a>
       </li>
@@ -646,6 +646,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipeline/caida-peers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CAIDA Peers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -715,7 +743,7 @@
   <span class="md-ellipsis">
     
   
-    Graph Analysis
+    Analysis Tools
   
 
     
@@ -731,7 +759,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Graph Analysis
+    Analysis Tools
   
 
           </label>
@@ -1093,7 +1121,7 @@
 <h2 id="topology-corepy">topology-core.py<a class="headerlink" href="#topology-corepy" title="Permanent link">&para;</a></h2>
 <p>Filters a topology edge list to edges where <strong>both</strong> endpoints have degree ≥ <code>--min-degree</code>. Produces a valid topology file in the same two-column format.</p>
 <p>Useful before visualisation (large topologies are slow in Gephi) or before analysis steps you want to run only on well-connected ASNs.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv run graph-analysis/topology-core.py --input &lt;file&gt; --min-degree &lt;N&gt; [OPTIONS]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>./run.sh topology-core.py --input &lt;file&gt; --min-degree &lt;N&gt; [OPTIONS]
 </code></pre></div>
 <table>
 <thead>
@@ -1134,14 +1162,14 @@
 <p>Degree is computed from the input file directly — no GML conversion required.</p>
 <h3 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Keep only edges where both ASNs have degree ≥ 10</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>uv<span class="w"> </span>run<span class="w"> </span>graph-analysis/topology-core.py<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span>--input<span class="w"> </span>output/20260101/topology-20260101.txt<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>./run.sh<span class="w"> </span>topology-core.py<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span>--input<span class="w"> </span>output-combined/20260101/topology-20260101.txt<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span>--min-degree<span class="w"> </span><span class="m">10</span>
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="c1"># Same, but annotate with degrees and zero-pad</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>uv<span class="w"> </span>run<span class="w"> </span>graph-analysis/topology-core.py<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">  </span>--input<span class="w"> </span>output/20260101/topology-20260101.txt<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">  </span>--output<span class="w"> </span>output/20260101/topology-core10.txt<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>./run.sh<span class="w"> </span>topology-core.py<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">  </span>--input<span class="w"> </span>output-combined/20260101/topology-20260101.txt<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">  </span>--output<span class="w"> </span>output-combined/20260101/topology-core10.txt<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">  </span>--min-degree<span class="w"> </span><span class="m">10</span><span class="w"> </span>--wide<span class="w"> </span>--justify-output
 </code></pre></div>
 <hr />
@@ -1152,7 +1180,7 @@
 <li><code>{output}.txt</code> — filtered edge list</li>
 <li><code>{output}.gml</code> — filtered graph with a <code>country</code> node attribute</li>
 </ul>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>uv run graph-analysis/geo-filter.py --input &lt;file&gt; --countries &lt;cc,...&gt; [OPTIONS]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>./run.sh geo-filter.py --input &lt;file&gt; --countries &lt;cc,...&gt; [OPTIONS]
 </code></pre></div>
 <table>
 <thead>
@@ -1193,17 +1221,17 @@
 <p>NRO stats are fetched and cached next to the input file.</p>
 <h3 id="examples_1">Examples<a class="headerlink" href="#examples_1" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Latin American topology</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>uv<span class="w"> </span>run<span class="w"> </span>graph-analysis/geo-filter.py<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span>--input<span class="w"> </span>output/20260101/topology-20260101.txt<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>./run.sh<span class="w"> </span>geo-filter.py<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span>--input<span class="w"> </span>output-combined/20260101/topology-20260101.txt<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span>--countries<span class="w"> </span>ar,br,cl,co,mx,pe,uy,ve<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span>--output<span class="w"> </span>output/20260101/latam<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span>--output<span class="w"> </span>output-combined/20260101/latam<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span>--date<span class="w"> </span><span class="m">20260101</span>
 <a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
 <a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="c1"># Single country</span>
-<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>uv<span class="w"> </span>run<span class="w"> </span>graph-analysis/geo-filter.py<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">  </span>--input<span class="w"> </span>output/20260101/topology-20260101.txt<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>./run.sh<span class="w"> </span>geo-filter.py<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">  </span>--input<span class="w"> </span>output-combined/20260101/topology-20260101.txt<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">  </span>--countries<span class="w"> </span>br<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">  </span>--output<span class="w"> </span>output/20260101/brazil
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">  </span>--output<span class="w"> </span>output-combined/20260101/brazil
 </code></pre></div>
 
 
@@ -1240,7 +1268,7 @@
       <div class="md-copyright">
   
     <div class="md-copyright__highlight">
-      Carlos Martinez · LACNIC
+      Carlos Martinez · LACNIC · Updated 2026-10-12
     </div>
   
   

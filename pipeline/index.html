@@ -325,11 +325,11 @@
     
     
       <li class="md-tabs__item">
-        <a href="../graph-analysis/" class="md-tabs__link">
+        <a href="../analysis/" class="md-tabs__link">
           
   
   
-  Graph Analysis
+  Analysis Tools
 
         </a>
       </li>
@@ -731,6 +731,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="caida-peers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CAIDA Peers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -795,7 +823,7 @@
   <span class="md-ellipsis">
     
   
-    Graph Analysis
+    Analysis Tools
   
 
     
@@ -811,7 +839,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Graph Analysis
+    Analysis Tools
   
 
           </label>
@@ -824,7 +852,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../graph-analysis/" class="md-nav__link">
+      <a href="../analysis/" class="md-nav__link">
         
   
   
@@ -852,7 +880,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../graph-analysis/conversion/" class="md-nav__link">
+      <a href="../analysis/conversion/" class="md-nav__link">
         
   
   
@@ -880,7 +908,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../graph-analysis/filtering/" class="md-nav__link">
+      <a href="../analysis/filtering/" class="md-nav__link">
         
   
   
@@ -908,7 +936,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../graph-analysis/analysis/" class="md-nav__link">
+      <a href="../analysis/analysis/" class="md-nav__link">
         
   
   
@@ -1048,10 +1076,10 @@
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>                       ├──▶  extract-paths.py  ──▶  build-topology.py
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>get-routeviews.py   ──┘
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>./mrt/&lt;date&gt;/       ──▶  ./paths/&lt;date&gt;/       ──▶  ./output/&lt;date&gt;/
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>  *.gz (RIS)              *.txt.gz
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>  *.bz2 (RouteViews)      *.v4.txt.gz
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>                          *.v6.txt.gz
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>./mrt/&lt;date&gt;/       ──▶  ./paths/&lt;date&gt;/            ──▶  ./output-combined/&lt;date&gt;/
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>  *.gz (RIS)              combined/*.txt.gz
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>  *.bz2 (RouteViews)      v4/*.v4.txt.gz
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>                          v6/*.v6.txt.gz
 </code></pre></div>
 <hr />
 <h2 id="justfile-recipes">Justfile recipes<a class="headerlink" href="#justfile-recipes" title="Permanent link">&para;</a></h2>
@@ -1112,6 +1140,10 @@
 <td>rsync path files from all fleet nodes</td>
 </tr>
 <tr>
+<td><code>caida-peers</code></td>
+<td><code>get-caida-peers.py</code> for the given month</td>
+</tr>
+<tr>
 <td><code>pack-and-publish</code></td>
 <td>tar + copy to a publish point</td>
 </tr>
@@ -1149,7 +1181,7 @@
 </tr>
 <tr>
 <td><code>output_dir</code></td>
-<td><code>./output</code></td>
+<td><code>./output-combined</code></td>
 <td>Root for topology output. Date subdir created automatically.</td>
 </tr>
 <tr>
@@ -1183,6 +1215,11 @@
 <td>Set to any non-empty value (e.g. <code>1</code>) to write a consolidated paths file from <code>topology-combined</code>. Checkpoint/resume aware (<code>.paths.gz</code> sidecars).</td>
 </tr>
 <tr>
+<td><code>no_justify</code></td>
+<td><em>(empty)</em></td>
+<td>Set to any non-empty value (e.g. <code>1</code>) to disable zero-padding in <code>caida-peers</code>.</td>
+</tr>
+<tr>
 <td><code>pubpoint</code></td>
 <td><code>/var/www/html/topo</code></td>
 <td>Destination for <code>pack-and-publish</code>.</td>
@@ -1195,6 +1232,7 @@
 <li><a href="download/">Download</a> — <code>get-mrt.py</code> and <code>get-routeviews.py</code></li>
 <li><a href="extract/">Extract Paths</a> — <code>extract-paths.py</code></li>
 <li><a href="topology/">Build Topology</a> — <code>build-topology.py</code></li>
+<li><a href="caida-peers/">CAIDA Peers</a> — <code>get-caida-peers.py</code></li>
 </ul>
 
 
@@ -1231,7 +1269,7 @@
       <div class="md-copyright">
   
     <div class="md-copyright__highlight">
-      Carlos Martinez · LACNIC
+      Carlos Martinez · LACNIC · Updated 2026-10-12
     </div>
   
   

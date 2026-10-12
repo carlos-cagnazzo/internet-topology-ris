@@ -325,11 +325,11 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../graph-analysis/" class="md-tabs__link">
+        <a href="../../analysis/" class="md-tabs__link">
           
   
   
-  Graph Analysis
+  Analysis Tools
 
         </a>
       </li>
@@ -787,6 +787,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../caida-peers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CAIDA Peers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -851,7 +879,7 @@
   <span class="md-ellipsis">
     
   
-    Graph Analysis
+    Analysis Tools
   
 
     
@@ -867,7 +895,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Graph Analysis
+    Analysis Tools
   
 
           </label>
@@ -880,7 +908,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../graph-analysis/" class="md-nav__link">
+      <a href="../../analysis/" class="md-nav__link">
         
   
   
@@ -908,7 +936,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../graph-analysis/conversion/" class="md-nav__link">
+      <a href="../../analysis/conversion/" class="md-nav__link">
         
   
   
@@ -936,7 +964,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../graph-analysis/filtering/" class="md-nav__link">
+      <a href="../../analysis/filtering/" class="md-nav__link">
         
   
   
@@ -964,7 +992,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../graph-analysis/analysis/" class="md-nav__link">
+      <a href="../../analysis/analysis/" class="md-nav__link">
         
   
   
@@ -1159,7 +1187,7 @@
 <hr />
 <h2 id="get-mrtpy-ripe-ris">get-mrt.py — RIPE RIS<a class="headerlink" href="#get-mrtpy-ripe-ris" title="Permanent link">&para;</a></h2>
 <p>Downloads the 00:00 UTC RIB snapshot (<code>bview</code>) for a given date from one or more RIS collectors. Already-downloaded files are skipped. Failed transfers are reported per-collector and counted in the summary without aborting the run.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv run get-mrt.py --collectors &lt;spec&gt; --date &lt;YYYYMMDD&gt; [--output-dir &lt;dir&gt;]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>./run.sh get-mrt.py --collectors &lt;spec&gt; --date &lt;YYYYMMDD&gt; [--output-dir &lt;dir&gt;]
 </code></pre></div>
 <table>
 <thead>
@@ -1227,15 +1255,15 @@
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>just<span class="w"> </span><span class="nv">date</span><span class="o">=</span><span class="m">20260101</span><span class="w"> </span><span class="nv">collectors</span><span class="o">=</span>rrc00-rrc25<span class="w"> </span>download
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># Single collector</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>uv<span class="w"> </span>run<span class="w"> </span>get-mrt.py<span class="w"> </span>--collectors<span class="w"> </span>rrc00<span class="w"> </span>--date<span class="w"> </span><span class="m">20260101</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>./run.sh<span class="w"> </span>get-mrt.py<span class="w"> </span>--collectors<span class="w"> </span>rrc00<span class="w"> </span>--date<span class="w"> </span><span class="m">20260101</span>
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
 <a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1"># Mixed specification</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>uv<span class="w"> </span>run<span class="w"> </span>get-mrt.py<span class="w"> </span>--collectors<span class="w"> </span>rrc00-rrc05,rrc11,rrc23<span class="w"> </span>--date<span class="w"> </span><span class="m">20260101</span><span class="w"> </span>--output-dir<span class="w"> </span>./mrt/20260101
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>./run.sh<span class="w"> </span>get-mrt.py<span class="w"> </span>--collectors<span class="w"> </span>rrc00-rrc05,rrc11,rrc23<span class="w"> </span>--date<span class="w"> </span><span class="m">20260101</span><span class="w"> </span>--output-dir<span class="w"> </span>./mrt/20260101
 </code></pre></div>
 <hr />
 <h2 id="get-routeviewspy-routeviews">get-routeviews.py — RouteViews<a class="headerlink" href="#get-routeviewspy-routeviews" title="Permanent link">&para;</a></h2>
 <p>Same interface as <code>get-mrt.py</code> but targets the RouteViews archive. Output files are <code>.bz2</code> format.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>uv run get-routeviews.py --collectors &lt;list&gt; --date &lt;YYYYMMDD&gt; [--output-dir &lt;dir&gt;]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>./run.sh get-routeviews.py --collectors &lt;list&gt; --date &lt;YYYYMMDD&gt; [--output-dir &lt;dir&gt;]
 </code></pre></div>
 <table>
 <thead>
@@ -1331,7 +1359,7 @@
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>just<span class="w"> </span><span class="nv">date</span><span class="o">=</span><span class="m">20260101</span><span class="w"> </span>download-routeviews
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
 <a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Custom selection</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>uv<span class="w"> </span>run<span class="w"> </span>get-routeviews.py<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>./run.sh<span class="w"> </span>get-routeviews.py<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span>--collectors<span class="w"> </span>route-views.amsix,route-views2,route-views.sg<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">  </span>--date<span class="w"> </span><span class="m">20260101</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">  </span>--output-dir<span class="w"> </span>./mrt/20260101
@@ -1339,10 +1367,10 @@
 <hr />
 <h2 id="downloading-a-full-month-of-routeviews-data">Downloading a full month of RouteViews data<a class="headerlink" href="#downloading-a-full-month-of-routeviews-data" title="Permanent link">&para;</a></h2>
 <p><code>download-routeviews-month.sh</code> downloads one bview per day for an entire month, running up to N days in parallel:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>./download-routeviews-month.sh<span class="w"> </span>YYYYMM<span class="w"> </span><span class="o">[</span>parallel_jobs<span class="o">]</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>./fleet/download-routeviews-month.sh<span class="w"> </span>YYYYMM<span class="w"> </span><span class="o">[</span>parallel_jobs<span class="o">]</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Download all of January 2026, 4 days in parallel</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>./download-routeviews-month.sh<span class="w"> </span><span class="m">202601</span><span class="w"> </span><span class="m">4</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>./fleet/download-routeviews-month.sh<span class="w"> </span><span class="m">202601</span><span class="w"> </span><span class="m">4</span>
 </code></pre></div>
 <p>Output: <code>./mrt-routeviews/YYYYMMDD/</code><br />
 Logs: <code>./logs/routeviews-YYYYMM/YYYYMMDD.log</code></p>
@@ -1381,7 +1409,7 @@ Logs: <code>./logs/routeviews-YYYYMM/YYYYMMDD.log</code></p>
       <div class="md-copyright">
   
     <div class="md-copyright__highlight">
-      Carlos Martinez · LACNIC
+      Carlos Martinez · LACNIC · Updated 2026-10-12
     </div>
   
   

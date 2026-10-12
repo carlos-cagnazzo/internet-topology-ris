@@ -2,54 +2,58 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://carlos-cagnazzo.github.io/internet-topology-ris/</loc>
-         <lastmod>2026-10-11</lastmod>
+         <lastmod>2026-10-12</lastmod>
     </url>
     <url>
          <loc>https://carlos-cagnazzo.github.io/internet-topology-ris/fleet/</loc>
-         <lastmod>2026-10-11</lastmod>
+         <lastmod>2026-10-12</lastmod>
     </url>
     <url>
          <loc>https://carlos-cagnazzo.github.io/internet-topology-ris/install/</loc>
-         <lastmod>2026-10-11</lastmod>
+         <lastmod>2026-10-12</lastmod>
     </url>
     <url>
          <loc>https://carlos-cagnazzo.github.io/internet-topology-ris/quickstart/</loc>
-         <lastmod>2026-10-11</lastmod>
+         <lastmod>2026-10-12</lastmod>
     </url>
     <url>
          <loc>https://carlos-cagnazzo.github.io/internet-topology-ris/reference/</loc>
-         <lastmod>2026-10-11</lastmod>
+         <lastmod>2026-10-12</lastmod>
     </url>
     <url>
-         <loc>https://carlos-cagnazzo.github.io/internet-topology-ris/graph-analysis/</loc>
-         <lastmod>2026-10-11</lastmod>
+         <loc>https://carlos-cagnazzo.github.io/internet-topology-ris/analysis/</loc>
+         <lastmod>2026-10-12</lastmod>
     </url>
     <url>
-         <loc>https://carlos-cagnazzo.github.io/internet-topology-ris/graph-analysis/analysis/</loc>
-         <lastmod>2026-10-11</lastmod>
+         <loc>https://carlos-cagnazzo.github.io/internet-topology-ris/analysis/analysis/</loc>
+         <lastmod>2026-10-12</lastmod>
     </url>
     <url>
-         <loc>https://carlos-cagnazzo.github.io/internet-topology-ris/graph-analysis/conversion/</loc>
-         <lastmod>2026-10-11</lastmod>
+         <loc>https://carlos-cagnazzo.github.io/internet-topology-ris/analysis/conversion/</loc>
+         <lastmod>2026-10-12</lastmod>
     </url>
     <url>
-         <loc>https://carlos-cagnazzo.github.io/internet-topology-ris/graph-analysis/filtering/</loc>
-         <lastmod>2026-10-11</lastmod>
+         <loc>https://carlos-cagnazzo.github.io/internet-topology-ris/analysis/filtering/</loc>
+         <lastmod>2026-10-12</lastmod>
     </url>
     <url>
          <loc>https://carlos-cagnazzo.github.io/internet-topology-ris/pipeline/</loc>
-         <lastmod>2026-10-11</lastmod>
+         <lastmod>2026-10-12</lastmod>
+    </url>
+    <url>
+         <loc>https://carlos-cagnazzo.github.io/internet-topology-ris/pipeline/caida-peers/</loc>
+         <lastmod>2026-10-12</lastmod>
     </url>
     <url>
          <loc>https://carlos-cagnazzo.github.io/internet-topology-ris/pipeline/download/</loc>
-         <lastmod>2026-10-11</lastmod>
+         <lastmod>2026-10-12</lastmod>
     </url>
     <url>
          <loc>https://carlos-cagnazzo.github.io/internet-topology-ris/pipeline/extract/</loc>
-         <lastmod>2026-10-11</lastmod>
+         <lastmod>2026-10-12</lastmod>
     </url>
     <url>
          <loc>https://carlos-cagnazzo.github.io/internet-topology-ris/pipeline/topology/</loc>
-         <lastmod>2026-10-11</lastmod>
+         <lastmod>2026-10-12</lastmod>
     </url>
 </urlset>
