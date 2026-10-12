@@ -26,8 +26,8 @@ for f in "$FLEET" "$ASSIGNMENTS"; do
     if [ ! -f "$f" ]; then
         echo "Error: ${f} not found." >&2
         case "$f" in
-            *fleet*)       echo "  Create it from fleet.csv.example" >&2 ;;
-            *assignments*) echo "  Create it from assignments.csv.example" >&2 ;;
+            *fleet*)       echo "  Create it from fleet/fleet.csv.example" >&2 ;;
+            *assignments*) echo "  Create it from fleet/assignments.csv.example" >&2 ;;
         esac
         exit 1
     fi

@@ -27,7 +27,7 @@ Each fleet node runs `slice` (download RIS + RouteViews + extract paths) for its
 ### 1. Create fleet.csv
 
 ```bash
-cp fleet.csv.example fleet.csv
+cp fleet/fleet.csv.example fleet.csv
 ```
 
 Format: `username,hostname,/absolute/path/to/repo` — one machine per line.
@@ -39,12 +39,12 @@ carlos,node2.example.com,/home/carlos/src/internet-topology-ris
 carlos,mac.local,/Users/carlos/src/internet-topology-ris
 ```
 
-`fleet.csv` is gitignored — specific to your deployment. The `fleet.csv.example` template is tracked.
+`fleet.csv` is gitignored — specific to your deployment. The `fleet/fleet.csv.example` template is tracked.
 
 ### 2. Create assignments.csv
 
 ```bash
-cp assignments.csv.example assignments.csv
+cp fleet/assignments.csv.example assignments.csv
 ```
 
 Format: `hostname,start_date,end_date,collectors` — one line per tmux session.
@@ -60,7 +60,7 @@ node2.example.com,20260726,20260731,rrc13-rrc25
 - **One line = one tmux session** on that host, iterating its date range serially
 - **Multiple lines per host** = multiple parallel sessions on that host
 - Ranges can be discontinuous — just add more lines
-- `assignments.csv` is gitignored; edit it freely without committing
+- `assignments.csv` is gitignored; edit it freely without committing. Template at `fleet/assignments.csv.example`
 
 ### 3. Ensure SSH access
 
@@ -181,7 +181,7 @@ just date='202607*' workers=4 topology
 
 ## Fetching output files from remote machines
 
-`fetch-results.sh` collects topology **output** files (not path files) from remote machines via rsync into per-host subdirectories. Configure `SOURCES`, `INCLUDES`, and `EXCLUDE` at the top of the script.
+`fleet/fetch-results.sh` collects topology **output** files (not path files) from remote machines via rsync into per-host subdirectories. Configure `SOURCES`, `INCLUDES`, and `EXCLUDE` at the top of the script.
 
 !!! note "Legacy"
     `fetch-results.sh` predates the dispatch/collect workflow. It remains useful for ad-hoc collection without `fleet.csv` / `assignments.csv`.

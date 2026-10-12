@@ -13,10 +13,10 @@ just date=20260101 collectors=rrc00-rrc25 pipeline
     `just date=20260101 pipeline` ✓  
     `just pipeline date=20260101` ✗
 
-Output lands in `./output/20260101/`:
+Output lands in `./output-combined/20260101/`:
 
 ```
-output/20260101/
+output-combined/20260101/
   topology-20260101.txt        # all-AF edge list
   topology-20260101-asns.txt   # unique ASN list
   topology-20260101-v4.txt     # IPv4 edge list
@@ -75,4 +75,4 @@ done
 
 - [Pipeline in depth](pipeline/index.md) — all flags, output file details, NRO filtering
 - [Fleet Workflow](fleet.md) — distribute processing across multiple machines
-- [Graph Analysis](graph-analysis/index.md) — filter, convert, annotate, and analyze topologies
+- [Analysis Tools](analysis/index.md) — filter, convert, annotate, and analyze topologies

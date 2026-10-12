@@ -1,6 +1,6 @@
-# Graph Analysis
+# Analysis Tools
 
-The `graph-analysis/` directory contains tools for analysing and transforming topology files. All run via `uv run graph-analysis/<tool>` from the repo root.
+The `analysis/` directory contains tools for analysing and transforming topology files. All run via `./run.sh <tool>` from the repo root (or directly as `uv run analysis/<tool>`).
 
 ---
 
@@ -15,13 +15,9 @@ The `graph-analysis/` directory contains tools for analysing and transforming to
 | [`hubs.py`](analysis.md#hubspy) | `.txt` or `.gml` | `.txt` hub list | List high-degree ASNs |
 | [`annotate-topology.py`](analysis.md#annotate-topologypy) | `.txt` edge list | `.txt` with CC+RIR | Add country/RIR columns |
 | [`asn-presence.py`](analysis.md#asn-presencepy) | `*-asns-YYYYMMDD.txt` files | matrix `.txt` | Day-by-day ASN presence matrix |
-
-Also available at the repo root:
-
-| Tool | Purpose |
-|---|---|
-| [`topology-ops.py`](analysis.md#topology-opspy) | Set operations (union / difference) on topology files |
-| [`lookup-as.py`](analysis.md#lookup-aspy) | Look up ASN holder info via RIPEstat |
+| [`topology-ops.py`](analysis.md#topology-opspy) | two or more `.txt` files | `.txt` edge list | Set operations (union / difference) |
+| [`lookup-as.py`](analysis.md#lookup-aspy) | ASN(s) | table / TSV | Look up ASN holder info via RIPEstat |
+| [`path-transit-freq.py`](analysis.md#path-transit-freqpy) | path `.txt[.gz]` file | freq `.txt` | Count transit AS frequency |
 
 ---
 
@@ -33,14 +29,14 @@ Large topologies (200k+ edges) are slow to render in Gephi. Filter to a core fir
 
 ```bash
 # Keep only nodes with degree ≥ 10
-uv run graph-analysis/topology-core.py \
-  --input output/20260101/topology-20260101.txt \
-  --output output/20260101/topology-core10.txt \
+./run.sh topology-core.py \
+  --input output-combined/20260101/topology-20260101.txt \
+  --output output-combined/20260101/topology-core10.txt \
   --min-degree 10
 
 # Convert core to GML with enriched labels
-uv run graph-analysis/topology-to-gml.py \
-  --input output/20260101/topology-core10.txt \
+./run.sh topology-to-gml.py \
+  --input output-combined/20260101/topology-core10.txt \
   --enrich --min-degree 10
 ```
 
@@ -48,14 +44,14 @@ uv run graph-analysis/topology-to-gml.py \
 
 ```bash
 # Latin America topology
-uv run graph-analysis/geo-filter.py \
-  --input output/20260101/topology-20260101.txt \
+./run.sh geo-filter.py \
+  --input output-combined/20260101/topology-20260101.txt \
   --countries ar,br,cl,co,mx,pe,uy,ve \
-  --output output/20260101/latam
+  --output output-combined/20260101/latam
 
 # Annotate with country/RIR for further analysis
-uv run graph-analysis/annotate-topology.py \
-  --input output/20260101/topology-20260101.txt \
+./run.sh annotate-topology.py \
+  --input output-combined/20260101/topology-20260101.txt \
   --date 20260101
 ```
 
@@ -63,7 +59,7 @@ uv run graph-analysis/annotate-topology.py \
 
 ```bash
 # Build topologies for several dates, then build the presence matrix
-uv run graph-analysis/asn-presence.py \
-  --input "output/*/topology-*-asns.txt" \
-  --output output/asn-presence.txt
+./run.sh asn-presence.py \
+  --input "output-combined/*/topology-*-asns.txt" \
+  --output output-combined/asn-presence.txt
 ```

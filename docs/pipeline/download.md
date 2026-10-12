@@ -9,7 +9,7 @@ Two scripts handle downloading, one per data source. Both follow the same interf
 Downloads the 00:00 UTC RIB snapshot (`bview`) for a given date from one or more RIS collectors. Already-downloaded files are skipped. Failed transfers are reported per-collector and counted in the summary without aborting the run.
 
 ```
-uv run get-mrt.py --collectors <spec> --date <YYYYMMDD> [--output-dir <dir>]
+./run.sh get-mrt.py --collectors <spec> --date <YYYYMMDD> [--output-dir <dir>]
 ```
 
 | Flag | Required | Description |
@@ -40,10 +40,10 @@ RIS has collectors `rrc00` through `rrc25`. Use `rrc00-rrc25` to collect from al
 just date=20260101 collectors=rrc00-rrc25 download
 
 # Single collector
-uv run get-mrt.py --collectors rrc00 --date 20260101
+./run.sh get-mrt.py --collectors rrc00 --date 20260101
 
 # Mixed specification
-uv run get-mrt.py --collectors rrc00-rrc05,rrc11,rrc23 --date 20260101 --output-dir ./mrt/20260101
+./run.sh get-mrt.py --collectors rrc00-rrc05,rrc11,rrc23 --date 20260101 --output-dir ./mrt/20260101
 ```
 
 ---
@@ -53,7 +53,7 @@ uv run get-mrt.py --collectors rrc00-rrc05,rrc11,rrc23 --date 20260101 --output-
 Same interface as `get-mrt.py` but targets the RouteViews archive. Output files are `.bz2` format.
 
 ```
-uv run get-routeviews.py --collectors <list> --date <YYYYMMDD> [--output-dir <dir>]
+./run.sh get-routeviews.py --collectors <list> --date <YYYYMMDD> [--output-dir <dir>]
 ```
 
 | Flag | Required | Description |
@@ -94,7 +94,7 @@ To add more, extend the `--collectors` argument in the `download-routeviews` rec
 just date=20260101 download-routeviews
 
 # Custom selection
-uv run get-routeviews.py \
+./run.sh get-routeviews.py \
   --collectors route-views.amsix,route-views2,route-views.sg \
   --date 20260101 \
   --output-dir ./mrt/20260101
@@ -107,12 +107,12 @@ uv run get-routeviews.py \
 `download-routeviews-month.sh` downloads one bview per day for an entire month, running up to N days in parallel:
 
 ```bash
-./download-routeviews-month.sh YYYYMM [parallel_jobs]
+./fleet/download-routeviews-month.sh YYYYMM [parallel_jobs]
 ```
 
 ```bash
 # Download all of January 2026, 4 days in parallel
-./download-routeviews-month.sh 202601 4
+./fleet/download-routeviews-month.sh 202601 4
 ```
 
 Output: `./mrt-routeviews/YYYYMMDD/`  

@@ -30,7 +30,7 @@ PATHS_DIR="./paths"
 
 if [ ! -f "$FLEET" ]; then
     echo "Error: ${FLEET} not found." >&2
-    echo "Create it from fleet.csv.example — lines: username,hostname,/path/to/repo" >&2
+    echo "Create it from fleet/fleet.csv.example — lines: username,hostname,/path/to/repo" >&2
     exit 1
 fi
 

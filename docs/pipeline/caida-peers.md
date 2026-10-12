@@ -3,7 +3,7 @@
 `get-caida-peers.py` downloads the [CAIDA AS Relationships dataset](https://publicdata.caida.org/datasets/as-relationships/) for a given month and extracts all peer-to-peer edges (relationship code `0`). The result is a deduplicated, sorted two-column edge list in the same format as the BGP-derived topology.
 
 ```
-uv run get-caida-peers.py --date YYYYMM [OPTIONS]
+./run.sh get-caida-peers.py --date YYYYMM [OPTIONS]
 ```
 
 ---
@@ -101,13 +101,13 @@ just date=202401 no_justify=1 caida-peers
 
 ```bash
 # January 2024 — uses serial-2
-uv run get-caida-peers.py --date 202401
+./run.sh get-caida-peers.py --date 202401
 
 # January 2005 — falls back to serial-1
-uv run get-caida-peers.py --date 200501
+./run.sh get-caida-peers.py --date 200501
 
 # Override output path, no zero-padding
-uv run get-caida-peers.py \
+./run.sh get-caida-peers.py \
   --date 202401 \
   --output ./my-peers-202401.txt \
   --no-justify-output

@@ -9,7 +9,7 @@ Filters a topology edge list to edges where **both** endpoints have degree ≥ `
 Useful before visualisation (large topologies are slow in Gephi) or before analysis steps you want to run only on well-connected ASNs.
 
 ```
-uv run graph-analysis/topology-core.py --input <file> --min-degree <N> [OPTIONS]
+./run.sh topology-core.py --input <file> --min-degree <N> [OPTIONS]
 ```
 
 | Flag | Default | Description |
@@ -26,14 +26,14 @@ Degree is computed from the input file directly — no GML conversion required.
 
 ```bash
 # Keep only edges where both ASNs have degree ≥ 10
-uv run graph-analysis/topology-core.py \
-  --input output/20260101/topology-20260101.txt \
+./run.sh topology-core.py \
+  --input output-combined/20260101/topology-20260101.txt \
   --min-degree 10
 
 # Same, but annotate with degrees and zero-pad
-uv run graph-analysis/topology-core.py \
-  --input output/20260101/topology-20260101.txt \
-  --output output/20260101/topology-core10.txt \
+./run.sh topology-core.py \
+  --input output-combined/20260101/topology-20260101.txt \
+  --output output-combined/20260101/topology-core10.txt \
   --min-degree 10 --wide --justify-output
 ```
 
@@ -49,7 +49,7 @@ Always produces two output files:
 - `{output}.gml` — filtered graph with a `country` node attribute
 
 ```
-uv run graph-analysis/geo-filter.py --input <file> --countries <cc,...> [OPTIONS]
+./run.sh geo-filter.py --input <file> --countries <cc,...> [OPTIONS]
 ```
 
 | Flag | Default | Description |
@@ -66,15 +66,15 @@ NRO stats are fetched and cached next to the input file.
 
 ```bash
 # Latin American topology
-uv run graph-analysis/geo-filter.py \
-  --input output/20260101/topology-20260101.txt \
+./run.sh geo-filter.py \
+  --input output-combined/20260101/topology-20260101.txt \
   --countries ar,br,cl,co,mx,pe,uy,ve \
-  --output output/20260101/latam \
+  --output output-combined/20260101/latam \
   --date 20260101
 
 # Single country
-uv run graph-analysis/geo-filter.py \
-  --input output/20260101/topology-20260101.txt \
+./run.sh geo-filter.py \
+  --input output-combined/20260101/topology-20260101.txt \
   --countries br \
-  --output output/20260101/brazil
+  --output output-combined/20260101/brazil
 ```

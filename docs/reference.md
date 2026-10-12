@@ -155,5 +155,5 @@ The following are gitignored and must not be committed:
 | `caida-cache/` | Cached CAIDA `.bz2` downloads |
 | `topology*.txt` | Any topology edge list at repo root |
 | `nro-delegated-stats*` | Cached NRO stats |
-| `fleet.csv` | Deployment-specific; copy from `fleet.csv.example` |
+| `fleet.csv` | Deployment-specific; copy from `fleet/fleet.csv.example` |
 | `fetch/` | Rsync staging from `fetch-results.sh` |

@@ -295,7 +295,7 @@ header .hint {
        LEFT COLUMN — PIPELINE
        ══════════════════════════════════════════════════════════════════════ -->
   <div class="box">
-    <div class="box-title">Pipeline tools <span>— uv run &lt;tool&gt; from repo root</span></div>
+    <div class="box-title">Pipeline tools <span>— ./run.sh &lt;tool&gt; or uv run pipeline/&lt;tool&gt;</span></div>
 
     <div class="tool">
       <div class="tool-head">
@@ -402,8 +402,8 @@ header .hint {
         <span class="tool-desc">Dispatch slice jobs to fleet nodes via tmux (fire-and-forget)</span>
       </div>
       <div class="flags">
-        <div class="f"><span class="v">./dispatch.sh</span> <span class="v">[parallel_jobs=2]</span> &nbsp;·&nbsp; <span class="v">just dispatch</span> &nbsp;·&nbsp; <span class="v">just jobs=4 dispatch</span></div>
-        <div class="note">Reads <code>assignments.csv</code> (copy from <code>assignments.csv.example</code>): <code>hostname,start_date,end_date,collectors</code></div>
+        <div class="f"><span class="v">./fleet/dispatch.sh</span> <span class="v">[parallel_jobs=2]</span> &nbsp;·&nbsp; <span class="v">just dispatch</span> &nbsp;·&nbsp; <span class="v">just jobs=4 dispatch</span></div>
+        <div class="note">Reads <code>assignments.csv</code> (copy from <code>fleet/assignments.csv.example</code>): <code>hostname,start_date,end_date,collectors</code></div>
         <div class="note">One line = one tmux session named <code>slice-START-END</code> · multiple lines per host = parallel sessions · idempotent (skips existing sessions)</div>
         <div class="note">Each session loops through its date range running <code>just date=$d slice</code> · requires fleet.csv, python3, tmux on all nodes</div>
       </div>
@@ -415,7 +415,7 @@ header .hint {
         <span class="tool-desc">Report per-date slice progress for all fleet nodes in assignments.csv</span>
       </div>
       <div class="flags">
-        <div class="f"><span class="v">./status.sh</span> &nbsp;·&nbsp; <span class="v">just status</span></div>
+        <div class="f"><span class="v">./fleet/status.sh</span> &nbsp;·&nbsp; <span class="v">just status</span></div>
         <div class="note">SSHes once per host · checks running tmux sessions + existing <code>paths/</code> dirs · shows ✓/· grid per date (7 per row)</div>
         <div class="note">Status labels: <code>running</code> / <code>done</code> / <code>partial</code> (some dates done, session gone) / <code>pending</code></div>
       </div>
@@ -427,7 +427,7 @@ header .hint {
         <span class="tool-desc">Collect path files from fleet nodes after slice runs</span>
       </div>
       <div class="flags">
-        <div class="f"><span class="v">./collect.sh</span> <span class="k req">YYYYMMDD|PATTERN</span> <span class="v">[parallel_jobs=2]</span> &nbsp;·&nbsp; reads <span class="v">fleet.csv</span> (copy from <span class="v">fleet.csv.example</span>)</div>
+        <div class="f"><span class="v">./fleet/collect.sh</span> <span class="k req">YYYYMMDD|PATTERN</span> <span class="v">[parallel_jobs=2]</span> &nbsp;·&nbsp; reads <span class="v">fleet.csv</span> (copy from <span class="v">fleet/fleet.csv.example</span>)</div>
         <div class="f"><span class="v">just date='202607*' collect</span> &nbsp;·&nbsp; <span class="v">just date='2026*' collect</span> &nbsp;·&nbsp; <span class="v">just date=20260701 collect</span></div>
         <div class="note">fleet.csv lines: <code>username,hostname,/path/to/repo</code> · # comments and blank lines skipped</div>
         <div class="note">date accepts glob patterns — collects all matching date dirs in one pass · local files skipped (<code>--ignore-existing</code>)</div>
@@ -452,7 +452,7 @@ header .hint {
         <span class="tool-desc">Download one RouteViews bview per day for an entire month</span>
       </div>
       <div class="flags">
-        <div class="f"><span class="v">./download-routeviews-month.sh</span> <span class="k req">YYYYMM</span> <span class="v">[parallel_jobs=4]</span></div>
+        <div class="f"><span class="v">./fleet/download-routeviews-month.sh</span> <span class="k req">YYYYMM</span> <span class="v">[parallel_jobs=4]</span></div>
         <div class="note">Output: ./mrt-routeviews/YYYYMMDD/ · logs: ./logs/routeviews-YYYYMM/YYYYMMDD.log</div>
       </div>
     </div>
@@ -468,7 +468,7 @@ header .hint {
        RIGHT COLUMN — GRAPH ANALYSIS
        ══════════════════════════════════════════════════════════════════════ -->
   <div class="box">
-    <div class="box-title">Graph Analysis tools <span>— uv run graph-analysis/&lt;tool&gt; from repo root</span></div>
+    <div class="box-title">Analysis tools <span>— ./run.sh &lt;tool&gt; or uv run analysis/&lt;tool&gt;</span></div>
 
     <div class="tool">
       <div class="tool-head">

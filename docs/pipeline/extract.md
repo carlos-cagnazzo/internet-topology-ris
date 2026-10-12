@@ -3,7 +3,7 @@
 `extract-paths.py` calls `bgpreader` on each MRT file and writes three sidecar files per input — one combined, one IPv4-only, one IPv6-only — into address-family subdirectories. A file set is skipped only if all three outputs already exist.
 
 ```
-uv run extract-paths.py --input-files <glob> [--output-dir <dir>]
+./run.sh extract-paths.py --input-files <glob> [--output-dir <dir>]
 ```
 
 | Flag | Required | Description |
@@ -61,7 +61,7 @@ If no files match a glob, the invocation prints a notice and exits cleanly (not 
 
 ```bash
 # Process all RIS files for a date
-uv run extract-paths.py \
+./run.sh extract-paths.py \
   --input-files "./mrt/20260101/*.gz" \
   --output-dir ./paths/20260101
 # Writes: paths/20260101/combined/*.txt.gz
@@ -69,7 +69,7 @@ uv run extract-paths.py \
 #         paths/20260101/v6/*.v6.txt.gz
 
 # Process all RouteViews files for the same date
-uv run extract-paths.py \
+./run.sh extract-paths.py \
   --input-files "./mrt/20260101/*.bz2" \
   --output-dir ./paths/20260101
 ```

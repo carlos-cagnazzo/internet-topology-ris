@@ -48,7 +48,7 @@ pipeline: (download) (download-routeviews) (process) (topology)
 
 # Step 1a — Download bview RIB snapshots from RIS collectors
 download:
-    uv run get-mrt.py \
+    ./run.sh get-mrt.py \
         --collectors {{ collectors }} \
         --date {{ date }} \
         --output-dir {{ mrt_dir }}/{{ date }}
@@ -58,7 +58,7 @@ download:
 # To add more, extend the --collectors list below.
 # Full collector index: https://www.routeviews.org/routeviews/index.php/collectors/
 download-routeviews:
-    uv run get-routeviews.py \
+    ./run.sh get-routeviews.py \
         --collectors route-views.amsix,ix-br2.gru,namex.fco,route-views2,route-views.sg,\
                      crix.sjo,hkix.hkg,route-views.chicago,route-views.kixp,route-views.rio,route-views.perth,pacwave.lax \
         --date {{ date }} \
@@ -66,10 +66,10 @@ download-routeviews:
 
 # Step 2 — Extract AS paths from downloaded MRT files (handles .gz and .bz2)
 process:
-    uv run extract-paths.py \
+    ./run.sh extract-paths.py \
         --input-files "{{ mrt_dir }}/{{ date }}/*.gz" \
         --output-dir {{ paths_dir }}/{{ date }}
-    uv run extract-paths.py \
+    ./run.sh extract-paths.py \
         --input-files "{{ mrt_dir }}/{{ date }}/*.bz2" \
         --output-dir {{ paths_dir }}/{{ date }}
 
@@ -79,15 +79,15 @@ slice: (download) (download-routeviews) (process)
 
 # Dispatch slice jobs to fleet nodes (reads assignments.csv + fleet.csv)
 dispatch:
-    ./dispatch.sh {{ jobs }}
+    ./fleet/dispatch.sh {{ jobs }}
 
 # Report per-date slice status for all fleet nodes
 status:
-    ./status.sh
+    ./fleet/status.sh
 
 # Collect path files from all fleet nodes into ./paths/<date>/ (reads fleet.csv)
 collect:
-    ./collect.sh '{{ date }}' {{ jobs }}
+    ./fleet/collect.sh '{{ date }}' {{ jobs }}
 
 # Step 3 — Build combined + per-AF topology edge lists
 topology: (topology-combined) (topology-v4) (topology-v6)
@@ -104,7 +104,7 @@ topology-combined:
     workers_flag=""; [[ -n "{{ workers }}" ]]             && workers_flag="--workers {{ workers }}"
     paths_flag="";   [[ -n "{{ paths }}" ]]               && paths_flag="--paths"
     mkdir -p "{{ output_dir }}/${safe}"
-    uv run build-topology.py \
+    ./run.sh build-topology.py \
         --justify-output \
         --filter-registered \
         $date_flag $workers_flag $paths_flag \
@@ -121,7 +121,7 @@ topology-v4:
     date_flag="";    [[ "{{ date }}"    =~ ^[0-9]{8}$ ]] && date_flag="--date {{ date }}"
     workers_flag=""; [[ -n "{{ workers }}" ]]             && workers_flag="--workers {{ workers }}"
     mkdir -p "{{ output_dir }}/${safe}"
-    uv run build-topology.py \
+    ./run.sh build-topology.py \
         --justify-output \
         --filter-registered \
         $date_flag $workers_flag \
@@ -138,7 +138,7 @@ topology-v6:
     date_flag="";    [[ "{{ date }}"    =~ ^[0-9]{8}$ ]] && date_flag="--date {{ date }}"
     workers_flag=""; [[ -n "{{ workers }}" ]]             && workers_flag="--workers {{ workers }}"
     mkdir -p "{{ output_dir }}/${safe}"
-    uv run build-topology.py \
+    ./run.sh build-topology.py \
         --justify-output \
         --filter-registered \
         $date_flag $workers_flag \
@@ -167,7 +167,7 @@ caida-peers:
     set -euo pipefail
     justify_flag="--justify-output"
     [[ -n "{{ no_justify }}" ]] && justify_flag="--no-justify-output"
-    uv run get-caida-peers.py \
+    ./run.sh get-caida-peers.py \
         --date {{ date }} \
         --output "{{ output_dir }}/{{ date }}/caida-peers-{{ date }}.txt" \
         $justify_flag

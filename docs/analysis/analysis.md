@@ -7,7 +7,7 @@
 Lists ASNs with degree ≥ `--min-degree` from a topology edge list or GML file. Degree is computed in a single pass for `.txt` input — no GML conversion required.
 
 ```
-uv run graph-analysis/hubs.py --input <file> --min-degree <N> [OPTIONS]
+./run.sh hubs.py --input <file> --min-degree <N> [OPTIONS]
 ```
 
 | Flag | Default | Description |
@@ -23,13 +23,13 @@ Without `--wide`: one ASN per line, sorted numerically. With `--wide`: two colum
 
 ```bash
 # List all ASNs with degree ≥ 100
-uv run graph-analysis/hubs.py \
-  --input output/20260101/topology-20260101.txt \
+./run.sh hubs.py \
+  --input output-combined/20260101/topology-20260101.txt \
   --min-degree 100
 
 # Ranked by degree
-uv run graph-analysis/hubs.py \
-  --input output/20260101/topology-20260101.txt \
+./run.sh hubs.py \
+  --input output-combined/20260101/topology-20260101.txt \
   --min-degree 50 --wide
 ```
 
@@ -40,7 +40,7 @@ uv run graph-analysis/hubs.py \
 Enriches a topology edge list by appending four columns to each edge: `cc1 rir1 cc2 rir2` — the country code and RIR for each ASN, sourced from the NRO delegated stats.
 
 ```
-uv run graph-analysis/annotate-topology.py --input <file> [OPTIONS]
+./run.sh annotate-topology.py --input <file> [OPTIONS]
 ```
 
 | Flag | Default | Description |
@@ -66,14 +66,14 @@ Input sort order is preserved.
 
 ```bash
 # Annotate with the NRO snapshot matching the topology date
-uv run graph-analysis/annotate-topology.py \
-  --input output/20260101/topology-20260101.txt \
+./run.sh annotate-topology.py \
+  --input output-combined/20260101/topology-20260101.txt \
   --date 20260101
 
 # With zero-padding
-uv run graph-analysis/annotate-topology.py \
-  --input output/20260101/topology-20260101.txt \
-  --output output/20260101/topology-20260101-annotated.txt \
+./run.sh annotate-topology.py \
+  --input output-combined/20260101/topology-20260101.txt \
+  --output output-combined/20260101/topology-20260101-annotated.txt \
   --date 20260101 --justify-output
 ```
 
@@ -84,7 +84,7 @@ uv run graph-analysis/annotate-topology.py \
 Builds a day-by-day ASN presence matrix from `{stem}-asns-YYYYMMDD.txt` files produced by `build-topology.py`. One row per unique ASN, one column per date, values `0`/`1`.
 
 ```
-uv run graph-analysis/asn-presence.py --input <glob> [--output <file>]
+./run.sh asn-presence.py --input <glob> [--output <file>]
 ```
 
 | Flag | Default | Description |
@@ -104,9 +104,9 @@ df = pd.read_csv("asn-presence.txt", sep=r"\s+", index_col=0, dtype=int)
 ### Examples
 
 ```bash
-uv run graph-analysis/asn-presence.py \
-  --input "output/*/topology-*-asns.txt" \
-  --output output/asn-presence.txt
+./run.sh asn-presence.py \
+  --input "output-combined/*/topology-*-asns.txt" \
+  --output output-combined/asn-presence.txt
 ```
 
 ---
@@ -116,7 +116,7 @@ uv run graph-analysis/asn-presence.py \
 Set operations on two or more topology edge list files. Both plain (`6 22773`) and zero-padded (`00000006 00022773`) formats are handled; comparison is always numeric.
 
 ```
-uv run topology-ops.py --op <add|sub> --output <file> [--justify-output] FILE [FILE ...]
+./run.sh topology-ops.py --op <add|sub> --output <file> [--justify-output] FILE [FILE ...]
 ```
 
 | Argument | Description |
@@ -131,17 +131,17 @@ uv run topology-ops.py --op <add|sub> --output <file> [--justify-output] FILE [F
 
 ```bash
 # Merge three dates
-uv run topology-ops.py --op add \
-  --output output/combined.txt --justify-output \
-  output/20260101/topology-20260101.txt \
-  output/20260201/topology-20260201.txt \
-  output/20260301/topology-20260301.txt
+./run.sh topology-ops.py --op add \
+  --output output-combined/combined.txt --justify-output \
+  output-combined/20260101/topology-20260101.txt \
+  output-combined/20260201/topology-20260201.txt \
+  output-combined/20260301/topology-20260301.txt
 
 # Links present in January but gone by March
-uv run topology-ops.py --op sub \
-  --output output/disappeared.txt \
-  output/20260101/topology-20260101.txt \
-  output/20260301/topology-20260301.txt
+./run.sh topology-ops.py --op sub \
+  --output output-combined/disappeared.txt \
+  output-combined/20260101/topology-20260101.txt \
+  output-combined/20260301/topology-20260301.txt
 ```
 
 ---
@@ -151,9 +151,9 @@ uv run topology-ops.py --op sub \
 Queries the [RIPEstat Data API](https://stat.ripe.net/docs/data_api) for one or more ASNs. Returns AS holder name, announced prefix count, last-seen timestamp, and announced status.
 
 ```
-uv run lookup-as.py --asn <N>
-uv run lookup-as.py --file <file>
-cat asns.txt | uv run lookup-as.py
+./run.sh lookup-as.py --asn <N>
+./run.sh lookup-as.py --file <file>
+cat asns.txt | ./run.sh lookup-as.py
 ```
 
 | Flag | Default | Description |
@@ -169,15 +169,46 @@ Batch mode shows a live progress bar. Results are displayed as a rich table.
 
 ```bash
 # Single ASN
-uv run lookup-as.py --asn 15169
+./run.sh lookup-as.py --asn 15169
 
 # Batch from the dropped-ASNs list
-uv run lookup-as.py \
-  --file output/20260101/topology-20260101-dropped-asns.txt \
-  --output output/20260101/dropped-asns-info.tsv
+./run.sh lookup-as.py \
+  --file output-combined/20260101/topology-20260101-dropped-asns.txt \
+  --output output-combined/20260101/dropped-asns-info.tsv
 
 # Pipe the hub list
-uv run graph-analysis/hubs.py \
-  --input output/20260101/topology-20260101.txt \
-  --min-degree 100 | uv run lookup-as.py
+./run.sh hubs.py \
+  --input output-combined/20260101/topology-20260101.txt \
+  --min-degree 100 | ./run.sh lookup-as.py
+```
+
+---
+
+## path-transit-freq.py
+
+Counts how often each AS appears as a transit hop across all paths in a file. The first ASN (sensor) and last ASN (origin) of each path are ignored; intermediate ASNs are deduplicated per path to collapse prepends.
+
+```
+./run.sh path-transit-freq.py --input <file> [OPTIONS]
+```
+
+| Flag | Default | Description |
+|---|---|---|
+| `--input` | required | Path file (`.txt` or `.txt.gz`) |
+| `--output` | input stem + `-transit-freq.txt` | Output file |
+| `--justify-output` / `--no-justify-output` | on | Zero-pad ASNs to 8 digits |
+
+Output is sorted by frequency descending. Paths with ≤2 ASNs (no transit hop) are skipped and counted; the total is reported on exit.
+
+### Examples
+
+```bash
+# Analyse a combined path file
+./run.sh path-transit-freq.py \
+  --input paths/20260101/combined/bview.rrc00.20260101.0000.txt.gz
+
+# Without zero-padding
+./run.sh path-transit-freq.py \
+  --input paths/20260101/combined/bview.rrc00.20260101.0000.txt.gz \
+  --no-justify-output
 ```

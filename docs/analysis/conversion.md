@@ -9,7 +9,7 @@ Tools for converting between topology edge list format and GML.
 Converts a topology edge list (`.txt`) to a [GML](https://en.wikipedia.org/wiki/Graph_Modelling_Language) file for import into Gephi, yEd, Cytoscape, or any graph tool that reads GML.
 
 ```
-uv run graph-analysis/topology-to-gml.py --input <file> [OPTIONS]
+./run.sh topology-to-gml.py --input <file> [OPTIONS]
 ```
 
 | Flag | Default | Description |
@@ -28,13 +28,13 @@ To produce a **filtered edge list** (`.txt`) rather than a GML, use `topology-co
 
 ```bash
 # Basic conversion, no filtering
-uv run graph-analysis/topology-to-gml.py \
-  --input output/20260101/topology-20260101.txt
+./run.sh topology-to-gml.py \
+  --input output-combined/20260101/topology-20260101.txt
 
 # Filter to core (degree ≥ 5) + enrich labels for well-connected nodes
-uv run graph-analysis/topology-to-gml.py \
-  --input output/20260101/topology-20260101.txt \
-  --output output/20260101/topology-core5.gml \
+./run.sh topology-to-gml.py \
+  --input output-combined/20260101/topology-20260101.txt \
+  --output output-combined/20260101/topology-core5.gml \
   --min-degree 5 \
   --enrich --enrich-min-degree 20
 ```
@@ -46,7 +46,7 @@ uv run graph-analysis/topology-to-gml.py \
 Inverse of `topology-to-gml.py`. Reads a GML file and writes a two-column topology edge list. Useful for round-tripping through Gephi (e.g. after manual layout or community detection).
 
 ```
-uv run graph-analysis/gml-to-topology.py --input <file> [OPTIONS]
+./run.sh gml-to-topology.py --input <file> [OPTIONS]
 ```
 
 | Flag | Default | Description |
@@ -62,13 +62,13 @@ ASNs are always read from the node `asn` attribute (safe for enriched GML files 
 
 ```bash
 # Round-trip: convert back from Gephi export
-uv run graph-analysis/gml-to-topology.py \
-  --input output/20260101/topology-gephi.gml \
-  --output output/20260101/topology-gephi.txt
+./run.sh gml-to-topology.py \
+  --input output-combined/20260101/topology-gephi.gml \
+  --output output-combined/20260101/topology-gephi.txt
 
 # With degree filter
-uv run graph-analysis/gml-to-topology.py \
-  --input output/20260101/topology.gml \
+./run.sh gml-to-topology.py \
+  --input output-combined/20260101/topology.gml \
   --min-degree 10 \
   --justify-output
 ```
