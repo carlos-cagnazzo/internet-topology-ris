@@ -3,7 +3,7 @@ site_description: Reconstruct Internet AS-level topology from RIPE RIS and Route
 site_url: https://carlos-cagnazzo.github.io/internet-topology-ris
 repo_url: https://github.com/carlos-cagnazzo/internet-topology-ris
 repo_name: carlos-cagnazzo/internet-topology-ris
-copyright: Carlos Martinez · LACNIC
+copyright: Carlos Martinez · LACNIC · Updated 2026-10-12
 
 theme:
   name: material
